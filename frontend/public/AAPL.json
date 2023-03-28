@@ -1,0 +1,10 @@
+{
+    "symbol": "AAPL",
+    "security": "Apple Inc.",
+    "gics_sector":"Information Technology",
+    "gics_sub_industry":"Technology Hardware, Storage & Peripherals",
+    "HQ_location":"Cupertino, California",
+    "date_added":"1982-11-30",
+    "cik":320193,
+    "founded":1977
+}
