@@ -10,6 +10,9 @@ export default function StockList() {
                 <li>
                     <Link href="/stocks/AAPL">AAPL</Link>
                 </li>
+                <li>
+                    <Link href="/stocks/AMZN">AMZN</Link>
+                </li>
             </ul>
         </div>
         
