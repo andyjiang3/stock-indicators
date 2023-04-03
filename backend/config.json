@@ -1,0 +1,9 @@
+{
+    "rds_host": "cis5500-hw4.chalmws4avpc.us-east-1.rds.amazonaws.com",
+    "rds_port": "3306",
+    "rds_user": "",
+    "rds_password" : "",
+    "rds_db": "projTest",
+    "server_host": "localhost",
+    "server_port":"8080"
+  }

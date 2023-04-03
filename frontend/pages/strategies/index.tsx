@@ -1,3 +1,10 @@
+import NavBar from "@/components/NavBar"
+
 export default function TradingStrategies() {
-    return <div>List of Trading Strategies</div>
+    return (<>
+    <NavBar />
+    <div>List of Trading Strategies</div>
+    </>
+
+    )
 }

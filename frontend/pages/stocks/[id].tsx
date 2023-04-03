@@ -1,13 +1,18 @@
 import { useRouter } from 'next/router'
+import NavBar from "@/components/NavBar"
 
-export default function Stock({stock}:{stock:any}) {
+export default function Stock({thisStock}:{thisStock:Stock}) {
 
     const router = useRouter();
-    const {id} = router.query;
+
+    if(!thisStock) {
+        return <div>The requested stock was not found.</div>
+    }
 
     return (<>
-        <h1>Stock: {id}</h1>
-        <table>
+        <NavBar />
+        <h1>{thisStock.symbol}</h1>
+        <table border={1} cellSpacing={3}>
             <tbody>
                 <tr>
                     <th>Symbol</th>
@@ -20,40 +25,61 @@ export default function Stock({stock}:{stock:any}) {
                     <th>Year Founded</th>
                 </tr>
                 <tr>
-                    <td>{stock.symbol}</td>
-                    <td>{stock.security}</td>
-                    <td>{stock.gics_sector}</td>
-                    <td>{stock.gics_sub_industry}</td>
-                    <td>{stock.HQ_location}</td>
-                    <td>{stock.date_added}</td>
-                    <td>{stock.cik}</td>
-                    <td>{stock.founded}</td>
+                    <td>{thisStock.symbol}</td>
+                    <td>{thisStock.security}</td>
+                    <td>{thisStock.gics_sector}</td>
+                    <td>{thisStock.gics_sub_industry}</td>
+                    <td>{thisStock.HQ_location}</td>
+                    <td>{thisStock.date_added}</td>
+                    <td>{thisStock.cik}</td>
+                    <td>{thisStock.founded}</td>
                 </tr>
             </tbody>
         </table>
+
+        
+
     </>)
 }
 
-export async function getStaticProps({params} : {params:any}) {
-    const request = await fetch(`http://localhost:3000/${params.id}.json`);
-    const data = await request.json();
 
-    return {
-        props: { stock: data},
-    }
+interface Stock {
+    symbol: string,
+    security: string,
+    gics_sector: string,
+    gics_sub_industry: string,
+    HQ_location: string,
+    date_added: string,
+    cik: number,
+    founded: number
 }
 
-export async function getStaticPaths(){
-    const request = await fetch(`http://localhost:3000/stocks.json`);
-    const data = await request.json();
+interface Props {
+    thisStock: Stock
+}
 
-    const paths = data.map((stock: any) => {
-        return {params: { id: stock}}
-    })
+export async function getStaticProps(context:any) {
+    const { id } = context.params;
+    const request = await fetch(`http://localhost:8080/stocks/${id}`);
+    const thisStock : Stock = await request.json();
+
+    return {
+        props: {
+            thisStock
+        }
+    };
+}
+
+export async function getStaticPaths() {
+    const request = await fetch(`http://localhost:8080/stocks`);
+    const allStocks = await request.json();
+
+    const paths = allStocks.map((stock: Stock) => ({
+        params: { id: stock.symbol}
+    }));
 
     return {
         paths,
         fallback: false
     }
-
 }
