@@ -57,7 +57,7 @@ const market = async function(req, res) {
 });
 }
 
-// Query 1: Find all information of the relevant stock (by stock symbol)
+// Route 1: Find all information of the relevant stock (by stock symbol)
 const stocksID = async function(req, res) {
   const id = req.params['symbol'];
   connection.query(`
@@ -74,7 +74,7 @@ const stocksID = async function(req, res) {
   });
 }
 
-// Query 2: Get all the news data for a specific stock on a specific date
+// Route 2: Get all the news data for a specific stock on a specific date
 const stockDayAvg = async function(req, res) {
   const id = req.params['symbol'];
   const date = req.query.date ?? '2020-10-01'; //note: defaults to 10/01/2020
@@ -95,7 +95,7 @@ const stockDayAvg = async function(req, res) {
   });
 }
 
-// Query 3: Get all the market data within a specific date range
+// Route 3: Get all the market data within a specific date range
 const marketDateRange = async function(req, res) {
   const dateStart = req.query.start ?? '2020-10-01'; //note: defaults to earliest date (10/01/2020)
   const dateEnd = req.query.end ?? '2022-07-29'; //note: defaults to latest date (07/29/2022)
@@ -116,7 +116,7 @@ const marketDateRange = async function(req, res) {
   });
 }
 
-// Query 4: Get the average price of a specific stock for a given range of time
+// Route 4: Get the average price of a specific stock for a given range of time
 const stockAvgRange = async function(req, res) {
   const id = req.params['symbol'];
   const dateStart = req.query.start ?? '2020-10-01'; //note: defaults to earliest date (10/01/2020)
@@ -138,7 +138,7 @@ const stockAvgRange = async function(req, res) {
   });
 }
 
-// Query 5: Get the Market, Stock, and News data of a specific stock from before a specific date
+// Route 5: Get the Market, Stock, and News data of a specific stock from before a specific date
 const stockInfoPeriod = async function(req, res) {
   const id = req.params['symbol'];
   const date = req.query.date ?? '2022-07-29'; //note: defaults to latest date (07/29/2022)
@@ -162,7 +162,7 @@ const stockInfoPeriod = async function(req, res) {
   });
 }
 
-// Query 6: Get the volatility of all stocks within a given time range
+// Route 6: Get the volatility of all stocks within a given time range
 const volatility = async function(req, res){
   const dateStart = req.query.start ?? '2020-10-01'; //note: defaults to earliest date (10/01/2020)
   const dateEnd = req.query.end ?? '2022-07-29'; //note: defaults to latest date (07/29/2022)
@@ -194,12 +194,13 @@ const volatility = async function(req, res){
   });
 }
 
-// Query #7: Get the upper/lower bollinger on a given period from a given time range of a given stock.
+// Route #7: Get the upper/lower bollinger on a given period from a given time range of a given stock.
 const bollinger = (req, res) => {
   const id = req.params['symbol'];
   const dateStart = req.query.start ?? '2020-10-01'; //note: defaults to earliest date (10/01/2020)
   const dateEnd = req.query.end ?? '2022-07-29'; //note: defaults to latest date (07/29/2022)
   const period = req.query.period ?? 20;
+  const bollingerSide = req.query.side ?? 0;
 
   connection.query(`
   WITH All_Dates AS (
@@ -231,7 +232,7 @@ const bollinger = (req, res) => {
       FROM Rolling_Data
       GROUP BY starting_date
   )
-  SELECT Rolling_Mean.date as date, (Rolling_Mean.rolling_mean + 2 * Rolling_STD.rolling_std) as bollinger
+  SELECT Rolling_Mean.date as date, (Rolling_Mean.rolling_mean ${bollingerSide == 0 ? '+' : '-'} 2 * Rolling_STD.rolling_std) as bollinger
   FROM Rolling_Mean
       JOIN Rolling_STD
         ON Rolling_Mean.date = Rolling_STD.date
@@ -245,7 +246,7 @@ const bollinger = (req, res) => {
   });
 }
 
-// Query 8: Get all data related to a stock for a given date d range and period p (p days before each d in range)
+// Route 8: Get all data related to a stock for a given date d range and period p (p days before each d in range)
 const stockAllInfo = (req,res) => {
   const id = req.params['symbol'];
   const dateStart = req.query.start ?? '2020-10-01'; //note: defaults to earliest date (10/01/2020)
@@ -269,7 +270,7 @@ const stockAllInfo = (req,res) => {
   FROM All_Dates AD 
        JOIN All_Info AI 
          ON AI.symbol = AD.symbol
-  WHERE AD.date >= DATE_SUB(AD.date, INTERVAL '${period}' DAY) AND AI.symbol = '${id}';
+  WHERE AD.date >= DATE_SUB(AD.date, INTERVAL '${period - 1}' DAY) AND AI.symbol = '${id}';
   `, (err, data) => {
     if (err || data.length === 0) {
       console.log(err);
@@ -281,7 +282,7 @@ const stockAllInfo = (req,res) => {
 }
 
 
-// Query 9: Finds the 10 'hot' stocks for a specified date range
+// Route 9: Finds the 10 'hot' stocks for a specified date range
 const hotStocks = (req, res) => {
   const dateStart = req.query.start ?? '2020-10-01'; //note: defaults to earliest date (10/01/2020)
   const dateEnd = req.query.end ?? '2022-07-29'; //note: defaults to latest date (07/29/2022)
@@ -341,7 +342,7 @@ const hotStocks = (req, res) => {
 }
 
 //SELECT S.*, C.price_change FROM Stock S LEFT JOIN price_changes C ON S.symbol = C.symbol ORDER BY price_change;
-// Query 10: Return a ranking of stocks whose value has changed the most since the last day (for given date range)
+// Route 10: Return a ranking of stocks whose value has changed the most since the last day (for given date range)
 const ranking = (req, res) => {
   const dateStart = req.query.start ?? '2020-10-01'; //note: defaults to earliest date (10/01/2020)
   const dateEnd = req.query.end ?? '2022-07-29'; //note: defaults to latest date (07/29/2022)
@@ -372,6 +373,7 @@ const ranking = (req, res) => {
   );
 }
 
+// Route 11: Finds the rolling mean for the given stock in the given range of date with given period (window)
 const rollingMean = (req, res) => {
   const id = req.params['symbol'];
   const dateStart = req.query.start ?? '2020-10-01'; //note: defaults to earliest date (10/01/2020)
