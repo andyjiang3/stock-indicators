@@ -1,14 +1,31 @@
 import NavBar from "@/components/NavBar"
 import Link from "next/link"
 import { FormEvent, useState } from "react"
+import { TextField } from "@mui/material"
+
+import { Stock } from "../../constants/types"
 
 // import { stocks } from '../../data'
 
-import { TextField } from "@mui/material"
+export async function getStaticProps() {
+    const req = await fetch(`http://localhost:8080/stocks`);
+    const stocks : Stock[] = await req.json();
+    
+    return {
+        props: {
+            stocks
+        }
+    };
+};
 
-export default function StocksPage({stocks}: Props){
+interface StocksHomeProps {
+    stocks: Stock[]
+}
+
+const StocksHome = ({
+    stocks
+}: StocksHomeProps) => {
     const [searchVal, setSearchVal] = useState('');
-
     const printVal = (e : FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         console.log(searchVal);
@@ -47,29 +64,4 @@ export default function StocksPage({stocks}: Props){
     )
 }
 
-
-interface Stock {
-    symbol: string,
-    security: string,
-    gics_sector: string,
-    gics_sub_industry: string,
-    HQ_location: string,
-    date_added: Date,
-    cik: number,
-    founded: number
-}
-
-interface Props {
-    stocks: Stock[]
-}
-
-export async function getStaticProps() {
-    const req = await fetch(`http://localhost:8080/stocks`);
-    const stocks : Stock[] = await req.json();
-    
-    return {
-        props: {
-            stocks
-        }
-    };
-};
+export default StocksHome;

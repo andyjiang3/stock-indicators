@@ -1,70 +1,14 @@
 import { useRouter } from 'next/router'
 import NavBar from "@/components/NavBar"
 
-export default function Stock({thisStock}:{thisStock:Stock}) {
-
-    const router = useRouter();
-
-    if(!thisStock) {
-        return <div>The requested stock was not found.</div>
-    }
-
-    return (
-    <div>
-        <NavBar />
-            <h1>{thisStock.symbol}</h1>
-            <table border={1} cellSpacing={3}>
-                <tbody>
-                    <tr>
-                        <th>Symbol</th>
-                        <th>Security</th>
-                        <th>GICS Sector</th>
-                        <th>GICS Sub Industry</th>
-                        <th>HQ Location</th>
-                        <th>Date Added</th>
-                        <th>CIK</th>
-                        <th>Year Founded</th>
-                    </tr>
-                    <tr>
-                        <td>{thisStock.symbol}</td>
-                        <td>{thisStock.security}</td>
-                        <td>{thisStock.gics_sector}</td>
-                        <td>{thisStock.gics_sub_industry}</td>
-                        <td>{thisStock.headquarters_location}</td>
-                        <td>{thisStock.date_first_added}</td>
-                        <td>{thisStock.cik}</td>
-                        <td>{thisStock.founded}</td>
-                    </tr>
-                </tbody>
-            </table>
-    </div>
-    )
-}
-
-
-interface Stock {
-    symbol: string,
-    security: string,
-    gics_sector: string,
-    gics_sub_industry: string,
-    headquarters_location: string,
-    date_first_added: string,
-    cik: number,
-    founded: number
-}
-
-interface Props {
-    thisStock: Stock
-}
-
 export async function getStaticProps(context:any) {
     const { id } = context.params;
     const request = await fetch(`http://localhost:8080/stocks/${id}`);
-    const thisStock : Stock = await request.json();
+    const stock : Stock = await request.json();
 
     return {
         props: {
-            thisStock
+            stock
         }
     };
 }
@@ -82,3 +26,61 @@ export async function getStaticPaths() {
         fallback: false
     }
 }
+
+interface Stock {
+    symbol: string,
+    security: string,
+    gics_sector: string,
+    gics_sub_industry: string,
+    headquarters_location: string,
+    date_first_added: string,
+    cik: number,
+    founded: number
+}
+
+interface StockProps {
+    stock: Stock
+}
+
+const Stock = ({
+    stock
+}: StockProps) => {
+    const router = useRouter();
+
+    if(!stock) {
+        return <div>The requested stock was not found.</div>
+    }
+
+    return (
+    <div>
+        <NavBar />
+            <h1>{stock.symbol}</h1>
+            <table border={1} cellSpacing={3}>
+                <tbody>
+                    <tr>
+                        <th>Symbol</th>
+                        <th>Security</th>
+                        <th>GICS Sector</th>
+                        <th>GICS Sub Industry</th>
+                        <th>HQ Location</th>
+                        <th>Date Added</th>
+                        <th>CIK</th>
+                        <th>Year Founded</th>
+                    </tr>
+                    <tr>
+                        <td>{stock.symbol}</td>
+                        <td>{stock.security}</td>
+                        <td>{stock.gics_sector}</td>
+                        <td>{stock.gics_sub_industry}</td>
+                        <td>{stock.headquarters_location}</td>
+                        <td>{stock.date_first_added}</td>
+                        <td>{stock.cik}</td>
+                        <td>{stock.founded}</td>
+                    </tr>
+                </tbody>
+            </table>
+    </div>
+    )
+}
+
+export default Stock;
