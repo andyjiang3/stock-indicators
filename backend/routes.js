@@ -68,9 +68,10 @@ const stocksID = async function(req, res) {
 const stockDayAvg = async function(req, res) {
   const id = req.params['symbol'];
   const date = req.query.date ?? '2020-10-01'; //note: defaults to 10/01/2020
+  console.log(date)
 
   connection.query(`
-  SELECT *, ((M.high + M.low)/2) as day_avg_from
+  SELECT S.*, ((M.high + M.low)/2) as day_avg
   FROM Stock S JOIN Market M ON S.symbol = M.symbol
   WHERE M.date = '${date}' AND M.symbol = '${id}';
   `, (err, data) => {
@@ -108,9 +109,10 @@ const stockAvgRange = async function(req, res) {
   const dateEnd = req.query.end ?? '2022-07-29'; //note: defaults to latest date (07/29/2022)
 
   connection.query(`
-  SELECT *, ((M.high + M.low)/2) as day_avg FROM
-  Stock S JOIN Market M ON S.symbol = M.symbol
-  WHERE M.date >= '${dateStart}' AND M.date <= '${dateEnd}' AND M.symbol = '${id}';
+  SELECT *, avg(close) as avg
+  FROM Stock S JOIN Market M ON S.symbol = M.symbol
+  WHERE M.date >= '${dateStart}' AND M.date <= '${dateEnd}' AND M.symbol = '${id}'
+  group by S.symbol;
   `, (err, data) => {
     if (err || data.length === 0) {
       console.log(err);
@@ -145,26 +147,29 @@ const volatility = async function(req, res){
   const dateStart = req.query.start ?? '2020-10-01'; //note: defaults to earliest date (10/01/2020)
   const dateEnd = req.query.end ?? '2022-07-29'; //note: defaults to latest date (07/29/2022)
 
-  connection.query(`
-  WITH DayPrices AS (
+  connection.query(
+    `
+    WITH DayPrices AS (
     SELECT *, ((M.high + M.low)/2) AS day_price
-    FROM Market M WHERE M.date >= '${dateStart}' AND M.end <= '${dateEnd}'
+    FROM Market M WHERE M.date >= '${dateStart}' AND M.date <= '${dateEnd}'
 ), Mean AS (
-    SELECT *, AVG(D.day_price) AS mean FROM DayPrices D GROUP BY D.symbol
+    SELECT D.symbol, AVG(D.day_price) AS mean FROM DayPrices D GROUP BY D.symbol
 ), Differences AS (
-    SELECT *, (D.day_price- M.mean) AS difference
+    SELECT D.symbol, (D.day_price- M.mean) AS difference
     FROM DayPrices D JOIN Mean M ON D.symbol = M.symbol
-    WHERE D.date >= '${dateStart}' AND D.end <= '${dateEnd}'
+    WHERE D.date >= '${dateStart}'AND D.date <= '${dateEnd}'
 )
 SELECT D2.symbol, SUM(sqrt(D2.difference * D2.difference)) AS volatility FROM Differences D2 GROUP BY D2.symbol;
-  `, (err, data) => {
-    if (err || data.length === 0) {
-      console.log(err);
-      res.json({});
-    } else {
-      res.json(data);
+  `,
+    (err, data) => {
+      if (err || data.length === 0) {
+        console.log(err);
+        res.json({});
+      } else {
+        res.json(data);
+      }
     }
-  });
+  );
 }
 
 // Query #7: Get the upper/lower bollinger on a given period from a given time range of a given stock.
