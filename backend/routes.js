@@ -146,7 +146,12 @@ const stockInfoPeriod = async function(req, res) {
   const period = req.query.period ?? 1; //note: defaults to 1
 
   connection.query(`
-  SELECT * FROM Stock S JOIN Market M ON S.symbol = M.symbol JOIN News N ON N.symbol = M.symbol
+  SELECT * 
+  FROM Stock S 
+       JOIN Market M 
+         ON S.symbol = M.symbol 
+       JOIN News N 
+         ON N.symbol = M.symbol
   WHERE S.symbol = '${id}' AND M.date <= '${date}' ORDER BY M.date DESC LIMIT ${period};
   `, (err, data) => {
     if (err || data.length === 0) {
@@ -166,15 +171,20 @@ const volatility = async function(req, res){
   connection.query(`
   WITH DayPrices AS (
     SELECT *, ((M.high + M.low)/2) AS day_price
-    FROM Market M WHERE M.date >= '${dateStart}' AND M.end <= '${dateEnd}'
-), Mean AS (
-    SELECT *, AVG(D.day_price) AS mean FROM DayPrices D GROUP BY D.symbol
-), Differences AS (
-    SELECT *, (D.day_price- M.mean) AS difference
-    FROM DayPrices D JOIN Mean M ON D.symbol = M.symbol
-    WHERE D.date >= '${dateStart}' AND D.end <= '${dateEnd}'
-)
-SELECT D2.symbol, SUM(sqrt(D2.difference * D2.difference)) AS volatility FROM Differences D2 GROUP BY D2.symbol;
+    FROM Market M 
+    WHERE M.date >= '${dateStart}' AND M.end <= '${dateEnd}'
+  ), Mean AS (
+      SELECT *, AVG(D.day_price) AS mean 
+      FROM DayPrices D 
+      GROUP BY D.symbol
+  ), Differences AS (
+      SELECT *, (D.day_price- M.mean) AS difference
+      FROM DayPrices D JOIN Mean M ON D.symbol = M.symbol
+      WHERE D.date >= '${dateStart}' AND D.end <= '${dateEnd}'
+  )
+  SELECT D2.symbol, SUM(sqrt(D2.difference * D2.difference)) AS volatility 
+  FROM Differences D2 
+  GROUP BY D2.symbol;
   `, (err, data) => {
     if (err || data.length === 0) {
       console.log(err);
@@ -196,13 +206,13 @@ const bollinger = (req, res) => {
   WITH Partitioned_Dates AS (
     SELECT *, NTILE(${period}) OVER ( ORDER BY M.date ) AS bucket_no
     FROM Market M WHERE M.symbol = '${id}' AND M.date >= '${dateStart}' AND M.date <= '${dateEnd}'
-), Running_Mean AS (
-    SELECT bucket_no, AVG(PD.close) AS mean FROM Partitioned_Dates PD GROUP BY bucket_no
-), Running_STD AS (
-    SELECT bucket_no, STD(PD.close) AS std FROM Partitioned_Dates PD GROUP BY bucket_no
-)
-SELECT *, RM.bucket_no, (RM.mean + 2 * RS.std) AS upper_bollinger, (RM.mean - 2 * RS.std) AS lower_bollinger
-FROM Partitioned_Dates PD JOIN Running_Mean RM ON PD.bucket_no = RM.bucket_no JOIN Running_STD RS ON RM.bucket_no = RS.bucket_no;
+  ), Running_Mean AS (
+      SELECT bucket_no, AVG(PD.close) AS mean FROM Partitioned_Dates PD GROUP BY bucket_no
+  ), Running_STD AS (
+      SELECT bucket_no, STD(PD.close) AS std FROM Partitioned_Dates PD GROUP BY bucket_no
+  )
+  SELECT *, RM.bucket_no, (RM.mean + 2 * RS.std) AS upper_bollinger, (RM.mean - 2 * RS.std) AS lower_bollinger
+  FROM Partitioned_Dates PD JOIN Running_Mean RM ON PD.bucket_no = RM.bucket_no JOIN Running_STD RS ON RM.bucket_no = RS.bucket_no;
   `, (err, data) => {
     if (err || data.length === 0) {
       console.log(err);
@@ -222,13 +232,22 @@ const stockAllInfo = (req,res) => {
 
   connection.query(`
   WITH All_Dates AS (
-    SELECT M.symbol, M.date FROM Market M JOIN Stock S ON S.symbol = M.symbol JOIN News N ON N.symbol = S.symbol
+    SELECT M.symbol, M.date 
+    FROM Market M JOIN Stock S ON S.symbol = M.symbol JOIN News N ON N.symbol = S.symbol
     WHERE M.date >= '${dateStart}' AND M.date <= '${dateEnd}'
-), All_Info AS (
-    SELECT * FROM Stock S JOIN Market M ON M.symbol = S.symbol JOIN News N ON N.symbol = M.symbol
-)
-SELECT AI.*, AD.date AS starting_date FROM All_Dates AD JOIN All_Info AI ON AI.symbol = AD.symbol
-WHERE AD.date >= DATE_SUB(AD.date, INTERVAL '${period}' DAY) AND AI.symbol = '${id}';
+  ), All_Info AS (
+      SELECT * 
+      FROM Stock S 
+           JOIN Market M 
+             ON M.symbol = S.symbol 
+           JOIN News N 
+             ON N.symbol = M.symbol
+  )
+  SELECT AI.*, AD.date AS starting_date 
+  FROM All_Dates AD 
+       JOIN All_Info AI 
+         ON AI.symbol = AD.symbol
+  WHERE AD.date >= DATE_SUB(AD.date, INTERVAL '${period}' DAY) AND AI.symbol = '${id}';
   `, (err, data) => {
     if (err || data.length === 0) {
       console.log(err);
@@ -249,32 +268,45 @@ const hotStocks = (req, res) => {
     `
   WITH positive_indicators AS (
     SELECT symbol, date, ( (N.news_volume /1000 + N.stock_rumors / 2 + N.analysts_comments / 200 ) * (N.news_positive / 200 - N.news_negative / 40 + N.news_stocks / 100 + N.dividends / 20 + N.corporate_earnings / 100 + N.m_and_a / 150 + N.product_recalls / 80)) AS positive_score
-    FROM News N WHERE N.date >= '${dateStart}' and N.date <= '${dateEnd}'
-), negative_indicators AS (
+    FROM News N 
+    WHERE N.date >= '${dateStart}' and N.date <= '${dateEnd}'
+  ), negative_indicators AS (
     SELECT symbol, date, ( (N.news_volume / 100 + N.stock_rumors / 2 + N.analysts_comments / 200) *(N.adverse_events / 200 + N.personnel_changes / 300)) AS negative_scores
-    FROM News N WHERE N.date >= '${dateStart}' AND N.date <= '${dateEnd}'
-), news_score AS (SELECT P.symbol, P.date, ((P.positive_score) - (N.negative_scores)) AS news_score
-                  FROM positive_indicators P
-                           JOIN negative_indicators N ON P.symbol = N.symbol AND P.date = N.date
-                  order by news_score DESC
-), market_score AS (SELECT date, symbol, ((M.high + M.low) / 2) AS market_score
-                    FROM Market M
-                    WHERE M.date >= '${dateStart}'
-                      AND M.date <= '${dateEnd}'
-), total_score AS (
+    FROM News N 
+    WHERE N.date >= '${dateStart}' AND N.date <= '${dateEnd}'
+  ), news_score AS (
+    SELECT P.symbol, P.date, ((P.positive_score) - (N.negative_scores)) AS news_score
+    FROM positive_indicators P
+         JOIN negative_indicators N 
+           ON P.symbol = N.symbol AND P.date = N.date
+    order by news_score DESC
+  ), market_score AS (
+    SELECT date, symbol, ((M.high + M.low) / 2) AS market_score
+    FROM Market M
+  WHERE M.date >= '${dateStart}' AND M.date <= '${dateEnd}'
+  ), total_score AS (
     SELECT M.date, M.symbol, (N.news_score + M.market_score) AS total_score
-    FROM market_score M JOIN news_score N ON M.symbol = N.symbol AND M.date = N.date
- ), upticks AS (
-                SELECT T1.symbol
-                FROM total_score T1 join total_score T2 ON T1.symbol = T2.symbol
-                where T1.date =  DATE_ADD(T2.date, INTERVAL 1 DAY) and T1.total_score > T2.total_score
-
-
-), upticks_sum AS (
-     SELECT symbol, count(*) AS upticks FROM upticks U GROUP BY U.symbol
-     order by upticks DESC
-)
-SELECT S.* FROM Stock S LEFT JOIN upticks_sum U ON S.symbol = U.Symbol ORDER BY U.upticks DESC LIMIT 10;
+    FROM market_score M 
+          JOIN news_score N 
+            ON M.symbol = N.symbol AND M.date = N.date
+  ), upticks AS (
+    SELECT T1.symbol
+    FROM total_score T1 
+         JOIN total_score T2 
+           ON T1.symbol = T2.symbol
+    WHERE T1.date = DATE_ADD(T2.date, INTERVAL 1 DAY) AND T1.total_score > T2.total_score
+  ), upticks_sum AS (
+    SELECT symbol, count(*) AS upticks 
+    FROM upticks U 
+    GROUP BY U.symbol
+    ORDER BY upticks DESC
+  )
+  SELECT S.* 
+  FROM Stock S 
+       LEFT JOIN upticks_sum U 
+              ON S.symbol = U.Symbol 
+  ORDER BY U.upticks DESC 
+  LIMIT 10;
   `,
     (err, data) => {
       if (err || data.length == 0) {
@@ -296,12 +328,18 @@ const ranking = (req, res) => {
   connection.query(
     `
   WITH price_changes AS (
-    SELECT M1.symbol, (M1.close - M2.close) AS price_change FROM Market M1 JOIN Market M2 ON M1.symbol = M2.symbol
+    SELECT M1.symbol, (M1.close - M2.close) AS price_change 
+    FROM Market M1 
+         JOIN Market M2 
+           ON M1.symbol = M2.symbol
     WHERE M1.date = DATE_SUB(M2.date, INTERVAL 1 DAY) AND M2.date >= '${dateStart}' AND M1.date <= '${dateEnd}'
     ORDER BY price_change DESC
     LIMIT 100
   )
-  select * from price_changes C join Stock S on S.symbol = C.symbol 
+  SELECT * 
+  FROM price_changes C 
+       JOIN Stock S 
+         ON S.symbol = C.symbol 
   `,
     (err, data) => {
       if (err || data.length == 0) {
@@ -313,8 +351,6 @@ const ranking = (req, res) => {
     }
   );
 }
-
-
 
 module.exports = {
     stocks, stocksID, news, market, stockDayAvg, marketDateRange, stockAvgRange, stockInfoPeriod, volatility, bollinger, stockAllInfo, hotStocks, ranking
