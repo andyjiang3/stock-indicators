@@ -15,7 +15,10 @@ connection.connect((err) => err && console.log(err));
 
 // Get all stocks from Stocks table
 const stocks = async function(req, res) {
-    connection.query(`SELECT * FROM Stock`, (err, data) => {
+    connection.query(`
+      SELECT * 
+      FROM Stock
+    `, (err, data) => {
     if(err || data.length === 0){
       console.log(err);
       res.json({});
@@ -25,9 +28,12 @@ const stocks = async function(req, res) {
   });
 }
 
-//Get all news from News table
+// Get all news from News table
 const news = async function(req, res) {
-  connection.query(`SELECT * FROM News`, (err, data) => {
+  connection.query(`
+    SELECT * 
+    FROM News
+  `, (err, data) => {
   if(err || data.length === 0){
     console.log(err);
     res.json({});
@@ -39,7 +45,10 @@ const news = async function(req, res) {
 
 //Get all data from Market table
 const market = async function(req, res) {
-  connection.query(`SELECT * FROM Market`, (err, data) => {
+  connection.query(`
+    SELECT * 
+    FROM Market
+  `, (err, data) => {
   if(err || data.length === 0){
     console.log(err);
     res.json({});
@@ -53,7 +62,9 @@ const market = async function(req, res) {
 const stocksID = async function(req, res) {
   const id = req.params['symbol'];
   connection.query(`
-    SELECT * FROM Stock WHERE symbol = '${id}';
+    SELECT * 
+    FROM Stock 
+    WHERE symbol = '${id}';
   `, (err, data) => {
     if (err || data.length === 0) {
       console.log(err);
@@ -70,8 +81,10 @@ const stockDayAvg = async function(req, res) {
   const date = req.query.date ?? '2020-10-01'; //note: defaults to 10/01/2020
 
   connection.query(`
-  SELECT *, ((M.high + M.low)/2) as day_avg_from
-  FROM Stock S JOIN Market M ON S.symbol = M.symbol
+  SELECT *, ((M.high + M.low)/2) AS day_avg_from
+  FROM Stock S 
+       JOIN Market M 
+         ON S.symbol = M.symbol
   WHERE M.date = '${date}' AND M.symbol = '${id}';
   `, (err, data) => {
     if (err || data.length === 0) {
@@ -89,7 +102,10 @@ const marketDateRange = async function(req, res) {
   const dateEnd = req.query.end ?? '2022-07-29'; //note: defaults to latest date (07/29/2022)
 
   connection.query(`
-  SELECT * FROM Stock S JOIN Market M ON S.symbol = M.symbol
+  SELECT * 
+  FROM Stock S 
+       JOIN Market M 
+         ON S.symbol = M.symbol
   WHERE M.date >= '${dateStart}' AND M.date <= '${dateEnd}';
   `, (err, data) => {
     if (err || data.length === 0) {
@@ -108,8 +124,10 @@ const stockAvgRange = async function(req, res) {
   const dateEnd = req.query.end ?? '2022-07-29'; //note: defaults to latest date (07/29/2022)
 
   connection.query(`
-  SELECT *, ((M.high + M.low)/2) as day_avg FROM
-  Stock S JOIN Market M ON S.symbol = M.symbol
+  SELECT *, ((M.high + M.low)/2) as day_avg 
+  FROM Stock S 
+       JOIN Market M 
+         ON S.symbol = M.symbol
   WHERE M.date >= '${dateStart}' AND M.date <= '${dateEnd}' AND M.symbol = '${id}';
   `, (err, data) => {
     if (err || data.length === 0) {
