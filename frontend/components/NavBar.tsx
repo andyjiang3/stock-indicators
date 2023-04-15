@@ -1,23 +1,15 @@
-import Head from 'next/head'
-import Image from 'next/image'
-
 import { AppBar, Box, Container, Toolbar, Typography, Button} from '@mui/material'
-import styles from '../styles/Home.module.css'
 
 
 export default function NavBar() {
     return (
-    <div className='App'>
-        <Box sx={{flexGrow: 1, marginBottom: 3}}>
-            <AppBar position='static'>
-                <Toolbar>
-                    <Typography variant='h5'>- CIS 550 Project -</Typography>
-                    <Button href="/" color='inherit'>Home</Button>
-                    <Button href="/stocks" color='inherit'>Stocks</Button>
-                    <Button href="/strategies" color='inherit'>Strategies</Button>
-                </Toolbar>
-            </AppBar>
-        </Box>
+    <div className="bg-white flex p-5 justify-start align-center shadow-sm mb-5">
+        <h4 className="text-xl text-blue-500"><a href="/" className="font-bold">Stock Prediction</a></h4>
+        <div className="flex ms-auto">
+            <a href="/stocks" className="text-base ms-10">Stocks</a>
+            <a href="/strategies" className="text-base ms-10">Strategies</a>
+        </div>
+        
     </div>
     );
 }

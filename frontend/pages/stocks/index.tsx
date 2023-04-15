@@ -5,7 +5,6 @@ import { FormEvent, useState } from "react"
 // import { stocks } from '../../data'
 
 import { TextField } from "@mui/material"
-import styles from '../../styles/Home.module.css'
 
 export default function StocksPage({stocks}: Props){
     const [searchVal, setSearchVal] = useState('');
@@ -15,10 +14,8 @@ export default function StocksPage({stocks}: Props){
         console.log(searchVal);
     }
 
-
-
     return (
-        <div className={styles.container}>
+        <div>
             <NavBar />
             <form onSubmit={printVal}>
                 <TextField
@@ -27,7 +24,7 @@ export default function StocksPage({stocks}: Props){
                     variant="outlined"
                     onInput={(e : React.FormEvent<HTMLInputElement>) => setSearchVal(e.currentTarget.value)}/>
             </form>
-            <div className={styles.container}>
+            <div>
                 <h1>
                     List of Stocks
                 </h1>

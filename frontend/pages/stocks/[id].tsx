@@ -1,8 +1,6 @@
 import { useRouter } from 'next/router'
 import NavBar from "@/components/NavBar"
 
-import styles from '../../styles/Home.module.css'
-
 export default function Stock({thisStock}:{thisStock:Stock}) {
 
     const router = useRouter();
@@ -11,7 +9,8 @@ export default function Stock({thisStock}:{thisStock:Stock}) {
         return <div>The requested stock was not found.</div>
     }
 
-    return (<div className={styles.container}>
+    return (
+    <div>
         <NavBar />
             <h1>{thisStock.symbol}</h1>
             <table border={1} cellSpacing={3}>
@@ -38,7 +37,8 @@ export default function Stock({thisStock}:{thisStock:Stock}) {
                     </tr>
                 </tbody>
             </table>
-    </div>)
+    </div>
+    )
 }
 
 
