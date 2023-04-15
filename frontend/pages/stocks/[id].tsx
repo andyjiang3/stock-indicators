@@ -1,5 +1,6 @@
 import { useRouter } from 'next/router'
 import NavBar from "@/components/NavBar"
+import { Stock } from "../../constants/types"
 
 export async function getStaticProps(context:any) {
     const { id } = context.params;
@@ -25,17 +26,6 @@ export async function getStaticPaths() {
         paths,
         fallback: false
     }
-}
-
-interface Stock {
-    symbol: string,
-    security: string,
-    gics_sector: string,
-    gics_sub_industry: string,
-    headquarters_location: string,
-    date_first_added: string,
-    cik: number,
-    founded: number
 }
 
 interface StockProps {

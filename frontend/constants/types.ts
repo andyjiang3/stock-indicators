@@ -3,8 +3,8 @@ export interface Stock {
     security: string,
     gics_sector: string,
     gics_sub_industry: string,
-    HQ_location: string,
-    date_added: Date,
+    headquarters_location: string,
+    date_first_added: string,
     cik: number,
     founded: number
 }
