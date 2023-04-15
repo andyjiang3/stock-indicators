@@ -199,7 +199,7 @@ const bollinger = (req, res) => {
   const id = req.params['symbol'];
   const dateStart = req.query.start ?? '2020-10-01'; //note: defaults to earliest date (10/01/2020)
   const dateEnd = req.query.end ?? '2022-07-29'; //note: defaults to latest date (07/29/2022)
-  const period = req.query.period ?? 1;
+  const period = req.query.period ?? 20;
 
   connection.query(`
   WITH All_Dates AS (
@@ -372,6 +372,49 @@ const ranking = (req, res) => {
   );
 }
 
+const rollingMean = (req, res) => {
+  const id = req.params['symbol'];
+  const dateStart = req.query.start ?? '2020-10-01'; //note: defaults to earliest date (10/01/2020)
+  const dateEnd = req.query.end ?? '2022-07-29'; //note: defaults to latest date (07/29/2022)
+  const period = req.query.period ?? 20;
+
+  connection.query(`
+  WITH Valid_Dates AS (
+    SELECT DISTINCT M.symbol, M.date
+    FROM Market M
+    WHERE M.date >= '${dateStart}' AND M.date <= '${dateEnd}'
+    AND M.symbol = '${id}'
+  ),
+  Valid_Range_Dates AS (
+      SELECT DISTINCT M.*
+      FROM Market M
+      WHERE M.date >= DATE_SUB('${dateStart}', INTERVAL ${period - 1} DAY) AND M.date <= '${dateEnd}'
+      AND M.symbol = '${id}'
+  ),
+  Rolling_Data AS (
+      SELECT DISTINCT AI.*, AD.date AS starting_date
+      FROM Valid_Dates AD
+          JOIN Valid_Range_Dates AI
+            ON AI.symbol = AD.symbol
+      WHERE AI.date >= DATE_SUB(AD.date, INTERVAL ${period - 1} DAY) AND AI.date <= AD.date
+  )
+  SELECT starting_date as date, COUNT(date) AS num_data_points, AVG(close) AS rolling_mean
+  FROM Rolling_Data
+  GROUP BY starting_date
+  `,
+    (err, data) => {
+      if (err || data.length == 0) {
+        console.log(err);
+        res.json({});
+      } else {
+        res.json(data);
+      }
+    }
+  );
+}
+
+
+
 module.exports = {
-    stocks, stocksID, news, market, stockDayAvg, marketDateRange, stockAvgRange, stockInfoPeriod, volatility, bollinger, stockAllInfo, hotStocks, ranking
+    stocks, stocksID, news, market, stockDayAvg, marketDateRange, stockAvgRange, stockInfoPeriod, volatility, bollinger, stockAllInfo, hotStocks, ranking, rollingMean
 }
