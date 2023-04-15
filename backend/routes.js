@@ -227,61 +227,73 @@ const hotStocks = (req, res) => {
   const dateStart = req.query.start ?? '2020-10-01'; //note: defaults to earliest date (10/01/2020)
   const dateEnd = req.query.end ?? '2022-07-29'; //note: defaults to latest date (07/29/2022)
 
-  connection.query(`
+  connection.query(
+    `
   WITH positive_indicators AS (
-    SELECT symbol, date, ( (N.volume + N.rumors + N.analyst_comments ) * (N.sentiment + N.stocks + N.dividends + N.corporate_earnings + N.m_and_a + N.product_recalls)) AS positive_score
+    SELECT symbol, date, ( (N.news_volume /1000 + N.stock_rumors / 2 + N.analysts_comments / 200 ) * (N.news_positive / 200 - N.news_negative / 40 + N.news_stocks / 100 + N.dividends / 20 + N.corporate_earnings / 100 + N.m_and_a / 150 + N.product_recalls / 80)) AS positive_score
     FROM News N WHERE N.date >= '${dateStart}' and N.date <= '${dateEnd}'
 ), negative_indicators AS (
-    SELECT symbol, date, ( (N.volume + N.rumors + N.analyst_comments) *(N.rumors, N.adverese_events, N.personell_changes)) AS negative_scores
+    SELECT symbol, date, ( (N.news_volume / 100 + N.stock_rumors / 2 + N.analysts_comments / 200) *(N.adverse_events / 200 + N.personnel_changes / 300)) AS negative_scores
     FROM News N WHERE N.date >= '${dateStart}' AND N.date <= '${dateEnd}'
-), news_score AS (
-    SELECT symbol, date, ((P.positive_score)-(N.negative_scores)) AS news_score
-    FROM positive_indicators P JOIN negative_indicators N ON P.symbol == N.symbol AND P.date == N.date
-), market_score AS (
-    SELECT date, symbol, market_score AS ((M.high+M.low)/2)
-    FROM Market M WHERE M.date >= '${dateStart}' AND M.date <= '${dateEnd}'
+), news_score AS (SELECT P.symbol, P.date, ((P.positive_score) - (N.negative_scores)) AS news_score
+                  FROM positive_indicators P
+                           JOIN negative_indicators N ON P.symbol = N.symbol AND P.date = N.date
+                  order by news_score DESC
+), market_score AS (SELECT date, symbol, ((M.high + M.low) / 2) AS market_score
+                    FROM Market M
+                    WHERE M.date >= '${dateStart}'
+                      AND M.date <= '${dateEnd}'
 ), total_score AS (
-    SELECT date, symbol, (N.news_score + M.market_score) AS total_score
+    SELECT M.date, M.symbol, (N.news_score + M.market_score) AS total_score
     FROM market_score M JOIN news_score N ON M.symbol = N.symbol AND M.date = N.date
-), upticks AS (
-    SELECT * FROM total_score T WHERE EXISTS (
-                                    SELECT T2.total_score FROM total_score T2 WHERE T2.date == DATE_ADD(T.date, INTERVAL 1 DAY) )
-                                AND T.total > ALL (
-                                    SELECT T2.total_score FROM total_score T2 WHERE T2.date == DATE_SUB(T.date, INTERVAL 1 DAY) )
+ ), upticks AS (
+                SELECT T1.symbol
+                FROM total_score T1 join total_score T2 ON T1.symbol = T2.symbol
+                where T1.date =  DATE_ADD(T2.date, INTERVAL 1 DAY) and T1.total_score > T2.total_score
+
+
 ), upticks_sum AS (
-    SELECT symbol, count(*) AS upticks FROM upticks U GROUP BY U.symbol
+     SELECT symbol, count(*) AS upticks FROM upticks U GROUP BY U.symbol
+     order by upticks DESC
 )
-SELECT S.* FROM Stock S LEFT JOIN upward_trends U ON S.symbol = U.Symbol ORDER BY U.upticks DESC LIMIT 10;
-  `, (err,data) => {
-    if(err || data.length == 0){
-      console.log(err);
-      res.json({});
-    } else {
-      res.json(data);
+SELECT S.* FROM Stock S LEFT JOIN upticks_sum U ON S.symbol = U.Symbol ORDER BY U.upticks DESC LIMIT 10;
+  `,
+    (err, data) => {
+      if (err || data.length == 0) {
+        console.log(err);
+        res.json({});
+      } else {
+        res.json(data);
+      }
     }
-  });
+  );
 }
 
-
+//SELECT S.*, C.price_change FROM Stock S LEFT JOIN price_changes C ON S.symbol = C.symbol ORDER BY price_change;
 // Query 10: Return a ranking of stocks whose value has changed the most since the last day (for given date range)
 const ranking = (req, res) => {
   const dateStart = req.query.start ?? '2020-10-01'; //note: defaults to earliest date (10/01/2020)
   const dateEnd = req.query.end ?? '2022-07-29'; //note: defaults to latest date (07/29/2022)
 
-  connection.query(`
+  connection.query(
+    `
   WITH price_changes AS (
-    SELECT M1.symbol, (M1.close-M2.close) AS pr_change FROM Market M1 JOIN Market M2 ON M1.symbol == M2.symbol
+    SELECT M1.symbol, (M1.close - M2.close) AS price_change FROM Market M1 JOIN Market M2 ON M1.symbol = M2.symbol
     WHERE M1.date = DATE_SUB(M2.date, INTERVAL 1 DAY) AND M2.date >= '${dateStart}' AND M1.date <= '${dateEnd}'
+    ORDER BY price_change DESC
+    LIMIT 100
   )
-  SELECT S.*, C.price_change FROM Stock S LEFT JOIN price_changes C ON M.symbol = C.symbol ORDER BY price_change;
-  `, (err, data) => {
-    if(err || data.length == 0){
-      console.log(err);
-      res.json({});
-    } else {
-      res.json(data);
+  select * from price_changes C join Stock S on S.symbol = C.symbol 
+  `,
+    (err, data) => {
+      if (err || data.length == 0) {
+        console.log(err);
+        res.json({});
+      } else {
+        res.json(data);
+      }
     }
-  });
+  );
 }
 
 
