@@ -1,0 +1,9 @@
+{
+    "rds_host": "stocks-market.cl30r3mhkhz8.us-east-1.rds.amazonaws.com",
+    "rds_port": "3306",
+    "rds_user": "tinakokoshvili",
+    "rds_password" : "drivethrough123",
+    "rds_db": "STOCKS_DB",
+    "server_host": "localhost",
+    "server_port":"8080"
+  }
