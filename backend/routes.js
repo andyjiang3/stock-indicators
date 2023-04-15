@@ -12,7 +12,6 @@ const connection = mysql.createConnection({
 });
 connection.connect((err) => err && console.log(err));
 
-
 // Get all stocks from Stocks table
 const stocks = async function(req, res) {
     connection.query(`
@@ -203,16 +202,39 @@ const bollinger = (req, res) => {
   const period = req.query.period ?? 1;
 
   connection.query(`
-  WITH Partitioned_Dates AS (
-    SELECT *, NTILE(${period}) OVER ( ORDER BY M.date ) AS bucket_no
-    FROM Market M WHERE M.symbol = '${id}' AND M.date >= '${dateStart}' AND M.date <= '${dateEnd}'
-  ), Running_Mean AS (
-      SELECT bucket_no, AVG(PD.close) AS mean FROM Partitioned_Dates PD GROUP BY bucket_no
-  ), Running_STD AS (
-      SELECT bucket_no, STD(PD.close) AS std FROM Partitioned_Dates PD GROUP BY bucket_no
+  WITH All_Dates AS (
+    SELECT DISTINCT M.symbol, M.date
+    FROM Market M
+    WHERE M.date >= '${dateStart}' AND M.date <= '${dateEnd}'
+    AND M.symbol = '${id}'
+  ),
+  All_Info AS (
+      SELECT DISTINCT M.*
+      FROM Market M
+      WHERE M.date >= DATE_SUB('${dateStart}', INTERVAL ${period - 1} DAY) AND M.date <= '${dateEnd}'
+      AND M.symbol = '${id}'
+  ),
+  Rolling_Data AS (
+      SELECT DISTINCT AI.*, AD.date AS starting_date
+      FROM All_Dates AD
+          JOIN All_Info AI
+            ON AI.symbol = AD.symbol
+      WHERE AI.date >= DATE_SUB(AD.date, INTERVAL ${period - 1} DAY) AND AI.date <= AD.date
+  ),
+  Rolling_Mean AS (
+      SELECT starting_date as date, COUNT(date) AS num_data_points, AVG(close) AS rolling_mean
+      FROM Rolling_Data
+      GROUP BY starting_date
+  ),
+  Rolling_STD AS (
+      SELECT starting_date as date, COUNT(date) AS num_data_points, STD(close) AS rolling_std
+      FROM Rolling_Data
+      GROUP BY starting_date
   )
-  SELECT *, RM.bucket_no, (RM.mean + 2 * RS.std) AS upper_bollinger, (RM.mean - 2 * RS.std) AS lower_bollinger
-  FROM Partitioned_Dates PD JOIN Running_Mean RM ON PD.bucket_no = RM.bucket_no JOIN Running_STD RS ON RM.bucket_no = RS.bucket_no;
+  SELECT Rolling_Mean.date as date, (Rolling_Mean.rolling_mean + 2 * Rolling_STD.rolling_std) as bollinger
+  FROM Rolling_Mean
+      JOIN Rolling_STD
+        ON Rolling_Mean.date = Rolling_STD.date
   `, (err, data) => {
     if (err || data.length === 0) {
       console.log(err);
@@ -264,8 +286,7 @@ const hotStocks = (req, res) => {
   const dateStart = req.query.start ?? '2020-10-01'; //note: defaults to earliest date (10/01/2020)
   const dateEnd = req.query.end ?? '2022-07-29'; //note: defaults to latest date (07/29/2022)
 
-  connection.query(
-    `
+  connection.query(`
   WITH positive_indicators AS (
     SELECT symbol, date, ( (N.news_volume /1000 + N.stock_rumors / 2 + N.analysts_comments / 200 ) * (N.news_positive / 200 - N.news_negative / 40 + N.news_stocks / 100 + N.dividends / 20 + N.corporate_earnings / 100 + N.m_and_a / 150 + N.product_recalls / 80)) AS positive_score
     FROM News N 
@@ -279,7 +300,7 @@ const hotStocks = (req, res) => {
     FROM positive_indicators P
          JOIN negative_indicators N 
            ON P.symbol = N.symbol AND P.date = N.date
-    order by news_score DESC
+    ORDER BY news_score DESC
   ), market_score AS (
     SELECT date, symbol, ((M.high + M.low) / 2) AS market_score
     FROM Market M
@@ -325,8 +346,7 @@ const ranking = (req, res) => {
   const dateStart = req.query.start ?? '2020-10-01'; //note: defaults to earliest date (10/01/2020)
   const dateEnd = req.query.end ?? '2022-07-29'; //note: defaults to latest date (07/29/2022)
 
-  connection.query(
-    `
+  connection.query(`
   WITH price_changes AS (
     SELECT M1.symbol, (M1.close - M2.close) AS price_change 
     FROM Market M1 
