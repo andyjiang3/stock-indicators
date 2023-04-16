@@ -11,7 +11,8 @@ export default function Stock({thisStock}:{thisStock:Stock}) {
         return <div>The requested stock was not found.</div>
     }
 
-    return (<div className={styles.container}>
+    return (
+    <div className={styles.container}>
         <NavBar />
             <h1>{thisStock.symbol}</h1>
             <table border={1} cellSpacing={3}>
@@ -38,7 +39,8 @@ export default function Stock({thisStock}:{thisStock:Stock}) {
                     </tr>
                 </tbody>
             </table>
-    </div>)
+    </div>
+    )
 }
 
 
@@ -61,7 +63,6 @@ export async function getStaticProps(context:any) {
     const { id } = context.params;
     const request = await fetch(`http://localhost:8080/stocks/${id}`);
     const thisStock : Stock = await request.json();
-
     return {
         props: {
             thisStock

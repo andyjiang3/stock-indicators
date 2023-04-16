@@ -1,6 +1,5 @@
 .container {
   flex-direction: column;
-  height: 100vh;
   background-color: whitesmoke;
   color: black;
  }
@@ -8,3 +7,36 @@
  .main-display {
   background-color: gray;
  }
+
+ .stockSearchBar {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  align-items: center;
+ }
+
+ .stockSearchInput {
+    width: 500px;
+    height: 25px;
+    border: 2px solid black;
+    text-align: center;
+    background-color: white;
+    color: black;
+ }
+
+.stockList {
+  margin: auto;
+  text-align: center;
+  width: 50%;
+  background-color: lightblue;
+}
+
+.stockListItem {
+  list-style-type: none;
+  padding: 10px;
+}
+
+.stockListItemLink {
+  border: 2px solid black;
+  padding: 5px;
+}

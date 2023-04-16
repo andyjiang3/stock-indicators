@@ -8,42 +8,32 @@ import { TextField } from "@mui/material"
 import styles from '../../styles/Home.module.css'
 
 export default function StocksPage({stocks}: Props){
-    const [searchVal, setSearchVal] = useState('');
+    const [searchVal, setSearchVal] = useState<string>('');
 
-    const printVal = (e : FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        console.log(searchVal);
+    const changeSearchVal = (event: React.ChangeEvent<HTMLInputElement>) => {
+        setSearchVal(event.target.value);
     }
-
-
 
     return (
         <div className={styles.container}>
             <NavBar />
-            <form onSubmit={printVal}>
-                <TextField
-                    id="stock-searchbar"
-                    label="Search by Symbol"
-                    variant="outlined"
-                    onInput={(e : React.FormEvent<HTMLInputElement>) => setSearchVal(e.currentTarget.value)}/>
+            <form className={styles.stockSearchBar}>
+                <label htmlFor="stockName">Search for a Stock</label>
+                <input className={styles.stockSearchInput} type="text" id="stockName" name="stockName" value={searchVal} onChange={changeSearchVal}/>
             </form>
-            <div className={styles.container}>
+            <div className={styles.stockList}>
                 <h1>
                     List of Stocks
                 </h1>
                 <ul>
-                {stocks && stocks.map((stock: Stock) => (
-                    <li key={stock.symbol}>
-                        <Link href={`/stocks/${stock.symbol}`}>{stock.symbol}</Link>
-                        {/* <ul>{stock.security}</ul>
-                        <ul>{stock.gics_sector}</ul>
-                        <ul>{stock.gics_sub_industry}</ul>
-                        <ul>{stock.HQ_location}</ul>
-                        <ul>{stock.date_added}</ul>
-                        <ul>{stock.cik}</ul>
-                        <ul>{stock.founded}</ul> */}
+                {stocks.filter((stock: Stock) => {
+                    return stock.symbol.toLowerCase().includes(searchVal.toLowerCase()) || stock.security.toLowerCase().includes(searchVal.toLowerCase());
+                }).map((stock: Stock) => (
+                    <li key={stock.symbol} className={styles.stockListItem}>
+                        <Link className={styles.stockListItemLink} href={`/stocks/${stock.symbol}`}>{stock.symbol} – {stock.security}</Link>
                     </li>
-                ))}
+                ))
+                }
                 </ul>
             </div>
         </div>
