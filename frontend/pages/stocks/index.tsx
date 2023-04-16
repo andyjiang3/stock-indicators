@@ -27,7 +27,7 @@ export default function StocksPage({stocks}: Props){
                 </h1>
                 <ul>
                 {stocks.filter((stock: Stock) => {
-                    return stock.symbol.toLowerCase().includes(searchVal.toLowerCase()) || stock.security.toLowerCase().includes(searchVal.toLowerCase());
+                    return stock.symbol.toLowerCase().startsWith(searchVal.toLowerCase()) || stock.security.toLowerCase().startsWith(searchVal.toLowerCase());
                 }).map((stock: Stock) => (
                     <li key={stock.symbol} className={styles.stockListItem}>
                         <Link className={styles.stockListItemLink} href={`/stocks/${stock.symbol}`}>{stock.symbol} – {stock.security}</Link>
