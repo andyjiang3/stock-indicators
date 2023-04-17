@@ -9,13 +9,13 @@ import styles from '../styles/Home.module.css'
 export default function Home() {
   return (<div className={styles.container}>
     <NavBar />
-    <Box sx={{
+    {/* <Box sx={{
       width: '50%',
       height: 300,
       backgroundColor: 'lightgray'
     }}>
 
-    </Box>
+    </Box> */}
   </div> 
   )
 }
