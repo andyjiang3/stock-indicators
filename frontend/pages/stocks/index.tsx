@@ -8,9 +8,8 @@ import { Stock } from "../../constants/types"
 const StocksHome = () => {
     const [stocks, setStocks] = useState<Stock[] | null>(null);
     const [searchVal, setSearchVal] = useState('');
-    const printVal = (e : FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        console.log(searchVal);
+    const changeSearchVal = (event: React.ChangeEvent<HTMLInputElement>) => {
+        setSearchVal(event.target.value);
     }
 
     useEffect(() => {
@@ -25,28 +24,17 @@ const StocksHome = () => {
         <div>
             <NavBar />
                 <div className="p-10 pt-0">
-                <form onSubmit={printVal}>
-                    <TextField
-                        id="stock-searchbar"
-                        label="Search by Symbol"
-                        variant="outlined"
-                        onInput={(e : React.FormEvent<HTMLInputElement>) => setSearchVal(e.currentTarget.value)}/>
-                </form>
-                <div>
-                    <h1>
-                        List of Stocks
-                    </h1>
+                    <form style={{padding: "auto", margin: "auto"}}>
+                        <label htmlFor="stockName">Search for a Stock</label>
+                        <input style={{border: "1px solid black", padding: "12px 20px", width: "100%"}} type="text" id="stockName" name="stockName" value={searchVal} onChange={changeSearchVal}/>
+                    </form>
+                <div style={{textAlign: "center"}}>
                     <ul>
-                    {stocks && stocks.map((stock: Stock) => (
+                    {stocks && stocks.filter((stock: Stock) => {
+                            return stock.symbol.toLowerCase().startsWith(searchVal.toLowerCase()) || stock.security.toLowerCase().startsWith(searchVal.toLowerCase());
+                        }).map((stock: Stock) => (
                         <li key={stock.symbol}>
-                            <Link href={`/stocks/${stock.symbol}`}>{stock.symbol}</Link>
-                            {/* <ul>{stock.security}</ul>
-                            <ul>{stock.gics_sector}</ul>
-                            <ul>{stock.gics_sub_industry}</ul>
-                            <ul>{stock.HQ_location}</ul>
-                            <ul>{stock.date_added}</ul>
-                            <ul>{stock.cik}</ul>
-                            <ul>{stock.founded}</ul> */}
+                            <Link href={`/stocks/${stock.symbol}`}>{stock.symbol} – {stock.security}</Link>
                         </li>
                     ))}
                     </ul>

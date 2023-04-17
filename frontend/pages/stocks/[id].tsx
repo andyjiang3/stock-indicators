@@ -44,7 +44,7 @@ const Stock = ({
     return (
     <div>
         <NavBar />
-            <h1>{stock.symbol}</h1>
+            <h1>Information About "{stock.symbol}"</h1>
             <table border={1} cellSpacing={3}>
                 <tbody>
                     <tr>
