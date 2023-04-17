@@ -1,6 +1,12 @@
 import { useRouter } from 'next/router'
 import NavBar from "@/components/NavBar"
-import { Stock } from "../../constants/types"
+import { Stock, StockPeriod } from "../../constants/types"
+import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import dayjs from 'dayjs';
+import { useState } from 'react';
+import { Line } from 'react-chartjs-2'
+import { Chart, CategoryScale, LineElement, LineController, PointElement } from 'chart.js/auto'
 
 export async function getStaticProps(context:any) {
     const { id } = context.params;
@@ -69,8 +75,73 @@ const Stock = ({
                     </tr>
                 </tbody>
             </table>
+
+        <DateRangeSelector thisStock={stock}/>
+
     </div>
     )
 }
+
+export function DateRangeSelector({thisStock}:{thisStock:Stock}) {
+    // const minDate = dayjs("2020-10-01"); 
+    const minDate = dayjs("2020-10-20");
+    const maxDate = dayjs("2022-07-29");
+
+    const [endDate, setEndDate] = useState<Date>(maxDate);
+
+    const [graphData, setGraphData] = useState<StockPeriod[] | null>(null);
+
+    const queryRange = async () => {
+        const endDateVal = endDate.toJSON().substring(0, 10);
+        const period = dayjs(endDateVal).diff("2020-10-01", 'day');
+        const req = await fetch(`http://localhost:8080/stockPeriod/${thisStock.symbol}?date=${endDate.toJSON().substring(0, 10)}&period=${period > 0 ? period : 1}`);
+        const periodData : StockPeriod[] = await req.json();
+        setGraphData(periodData);
+    }
+
+    Chart.register(CategoryScale, LineElement, LineController, PointElement);
+    const toGraph = {
+        labels: graphData?.map((period : StockPeriod) => period.date.toString().substring(0,10)),
+        datasets: [{
+            label: 'Close',
+            fill: false,
+            lineTension: 0.1,
+            backgroundColor: 'rgba(75,192,192,0.4)',
+            borderColor: 'rgba(75,192,192,1)',
+            borderCapStyle: 'butt',
+            borderDash: [],
+            borderDashOffset: 0.0,
+            borderJoinStyle: 'miter',
+            pointBorderColor: 'rgba(75,192,192,1)',
+            pointBackgroundColor: '#fff',
+            pointBorderWidth: 1,
+            pointHoverRadius: 5,
+            pointHoverBackgroundColor: 'rgba(75,192,192,1)',
+            pointHoverBorderColor: 'rgba(220,220,220,1)',
+            pointHoverBorderWidth: 2,
+            pointRadius: 1,
+            pointHitRadius: 10,
+            data: graphData?.map(period => period.close),
+        }]
+    };
+
+    return (
+        <LocalizationProvider dateAdapter={AdapterDayjs}>
+            <h1>Average Price in Time Range</h1>
+            <div>
+                <DatePicker label="End Date" minDate={minDate} maxDate={maxDate} value={endDate} onChange={(newValue) => setEndDate(newValue)}/>
+                <button onClick={queryRange}>Generate Graph</button>
+            </div>
+            {graphData &&
+            <div>
+                <Line width={400} height={400} data={toGraph} />
+            </div>}
+        </LocalizationProvider>
+        
+    )
+}
+
+
+
 
 export default Stock;
