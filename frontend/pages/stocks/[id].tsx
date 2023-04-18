@@ -1,6 +1,6 @@
 import { useRouter } from 'next/router'
 import NavBar from "@/components/NavBar"
-import { Stock, StockPeriod } from "../../constants/types"
+import { Stock, StockPeriod, RollingMean } from "../../constants/types"
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
@@ -90,6 +90,7 @@ export function DateRangeSelector({thisStock}:{thisStock:Stock}) {
     const [endDate, setEndDate] = useState<Date>(maxDate);
 
     const [graphData, setGraphData] = useState<StockPeriod[] | null>(null);
+    const [rollingMean, setRollingMean] = useState<RollingMean[] | null>(null);
 
     const queryRange = async () => {
         const endDateVal = endDate.toJSON().substring(0, 10);
@@ -97,11 +98,15 @@ export function DateRangeSelector({thisStock}:{thisStock:Stock}) {
         const req = await fetch(`http://localhost:8080/stockPeriod/${thisStock.symbol}?date=${endDate.toJSON().substring(0, 10)}&period=${period > 0 ? period : 1}`);
         const periodData : StockPeriod[] = await req.json();
         setGraphData(periodData);
+
+        const req_rolling = await fetch(`http://localhost:8080/rollingMean/${thisStock.symbol}?end=${endDate.toJSON().substring(0, 10)}&period=${period > 0 ? period : 1}`);
+        const rollingData : RollingMean[] = await req_rolling.json();
+        setRollingMean(rollingData);
     }
 
     Chart.register(CategoryScale, LineElement, LineController, PointElement);
     const toGraph = {
-        labels: graphData?.map((period : StockPeriod) => period.date.toString().substring(0,10)),
+        labels: graphData?.map((period : StockPeriod) => period.date),
         datasets: [{
             label: 'Close',
             fill: false,
@@ -122,7 +127,28 @@ export function DateRangeSelector({thisStock}:{thisStock:Stock}) {
             pointRadius: 1,
             pointHitRadius: 10,
             data: graphData?.map(period => period.close),
-        }]
+        }, {
+            label: '20 ma',
+            fill: false,
+            lineTension: 0.1,
+            backgroundColor: 'rgba(255,171,0,0.4)',
+            borderColor: 'rgba(255,171,0,1)',
+            borderCapStyle: 'butt',
+            borderDash: [],
+            borderDashOffset: 0.0,
+            borderJoinStyle: 'miter',
+            pointBorderColor: 'rgba(255,171,0,1)',
+            pointBackgroundColor: '#fff',
+            pointBorderWidth: 1,
+            pointHoverRadius: 5,
+            pointHoverBackgroundColor: 'rgba(225,171,0,1)',
+            pointHoverBorderColor: 'rgba(220,220,220,1)',
+            pointHoverBorderWidth: 2,
+            pointRadius: 1,
+            pointHitRadius: 10,
+            data: rollingMean?.map((rolling : RollingMean) => rolling.rolling_mean)
+        }
+        ]
     };
 
     return (
@@ -134,7 +160,7 @@ export function DateRangeSelector({thisStock}:{thisStock:Stock}) {
             </div>
             {graphData &&
             <div>
-                <Line width={400} height={400} data={toGraph} />
+                <Line width={100} height={50} data={toGraph} />
             </div>}
         </LocalizationProvider>
         

@@ -42,3 +42,9 @@ export interface StockPeriod {
     personnel_changes: number,
     stock_rumors: number
 }
+
+export interface RollingMean {
+    date: number,
+    num_data_points: number,
+    rolling_mean: number
+}
