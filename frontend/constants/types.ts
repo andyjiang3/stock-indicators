@@ -53,3 +53,22 @@ export interface Bollinger {
     date: number,
     bollinger: number
 }
+
+export interface StockDayAvg {
+    symbol: string,
+    security: string,
+    gics_sector: string,
+    gics_sub_industry: string,
+    headquarters_location: string,
+    date_first_added: string,
+    cik: number,
+    founded: number,
+    date: number,
+    low: number,
+    open: number,
+    volume: number,
+    high: number,
+    close: number,
+    adjusted_close: number,
+    day_avg: number
+}
