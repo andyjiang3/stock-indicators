@@ -82,6 +82,12 @@ const Stock = ({
     )
 }
 
+function formatDates(data : StockDayAvg) {
+    const toDate = new Date(data.date);
+    const formatted = toDate.toISOString().slice(0, 10);
+    return {...data, date: formatted};
+}
+
 export function DateRangeSelector({thisStock}:{thisStock:Stock}) {
     // const minDate = dayjs("2020-10-01"); 
     const minDate = dayjs("2020-10-20");
@@ -96,21 +102,24 @@ export function DateRangeSelector({thisStock}:{thisStock:Stock}) {
 
     const queryRange = async () => {
         const endDateVal = endDate.toJSON().substring(0, 10);
-        const period = dayjs(endDateVal).diff("2020-10-01", 'day');
+        // const period = dayjs(endDateVal).diff("2020-10-01", 'day');
 
-        const req = await fetch(`http://localhost:8080/stockAvgRange/${thisStock.symbol}?end=${endDate.toJSON().substring(0, 10)}`);
-        const periodData : StockDayAvg[] = await req.json();
-        setGraphData(periodData);
+        const req = await fetch(`http://localhost:8080/stockAvgRange/${thisStock.symbol}?end=${endDateVal}`);
+        const close : StockDayAvg[] = await req.json();
+        console.log(close);
+        const closeData : StockDayAvg[] = close.map((c : StockDayAvg) => formatDates(c));
+        setGraphData(closeData);
 
-        const req_rolling = await fetch(`http://localhost:8080/rollingMean/${thisStock.symbol}?end=${endDate.toJSON().substring(0, 10)}&period=${period > 0 ? period : 1}`);
+        const req_rolling = await fetch(`http://localhost:8080/rollingMean/${thisStock.symbol}?end=${endDateVal}&period=20`);
         const rollingData : RollingMean[] = await req_rolling.json();
+        console.log(rollingData);
         setRollingMean(rollingData);
 
-        const req_upper = await fetch(`http://localhost:8080/bollinger/${thisStock.symbol}?end=${endDate.toJSON().substring(0, 10)}&period=${period > 0 ? period : 1}&side=0`);
+        const req_upper = await fetch(`http://localhost:8080/bollinger/${thisStock.symbol}?end=${endDateVal}&period=20&side=0`);
         const upperData : Bollinger[] = await req_upper.json();
         setUpperBollinger(upperData);
 
-        const req_lower = await fetch(`http://localhost:8080/bollinger/${thisStock.symbol}?end=${endDate.toJSON().substring(0, 10)}&period=${period > 0 ? period : 1}&side=1`);
+        const req_lower = await fetch(`http://localhost:8080/bollinger/${thisStock.symbol}?end=${endDateVal}&period=20&side=1`);
         const lowerData : Bollinger[] = await req_lower.json();
         setLowerBollinger(lowerData);
     }
@@ -137,7 +146,7 @@ export function DateRangeSelector({thisStock}:{thisStock:Stock}) {
             pointHoverBorderWidth: 2,
             pointRadius: 1,
             pointHitRadius: 10,
-            data: graphData?.map((d : StockDayAvg) => d.day_avg)
+            data: graphData?.map((d : StockDayAvg) => d.close)
         }, {
             label: '20 ma',
             fill: false,
