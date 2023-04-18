@@ -97,7 +97,7 @@ export function DateRangeSelector({thisStock}:{thisStock:Stock}) {
     const queryRange = async () => {
         const endDateVal = endDate.toJSON().substring(0, 10);
         const period = dayjs(endDateVal).diff("2020-10-01", 'day');
-        
+
         const req = await fetch(`http://localhost:8080/stockAvgRange/${thisStock.symbol}?end=${endDate.toJSON().substring(0, 10)}`);
         const periodData : StockDayAvg[] = await req.json();
         setGraphData(periodData);
@@ -122,17 +122,17 @@ export function DateRangeSelector({thisStock}:{thisStock:Stock}) {
             label: 'Close',
             fill: false,
             lineTension: 0.1,
-            backgroundColor: 'rgba(75,192,192,0.4)',
-            borderColor: 'rgba(75,192,192,1)',
+            backgroundColor: 'rgba(0,125,255,0.4)',
+            borderColor: 'rgba(0,125,255,1)',
             borderCapStyle: 'butt',
             borderDash: [],
             borderDashOffset: 0.0,
             borderJoinStyle: 'miter',
-            pointBorderColor: 'rgba(75,192,192,1)',
+            pointBorderColor: 'rgba(0,125,255,1)',
             pointBackgroundColor: '#fff',
             pointBorderWidth: 1,
             pointHoverRadius: 5,
-            pointHoverBackgroundColor: 'rgba(75,192,192,1)',
+            pointHoverBackgroundColor: 'rgba(0,125,255,1)',
             pointHoverBorderColor: 'rgba(220,220,220,1)',
             pointHoverBorderWidth: 2,
             pointRadius: 1,
@@ -180,7 +180,7 @@ export function DateRangeSelector({thisStock}:{thisStock:Stock}) {
             data: upperBollinger?.map((b : Bollinger) => b.bollinger)
         }, {
             label: 'Lower Bollinger',
-            fill: false,
+            fill: {target: '-1', above: 'rgba(140,140,140,0.2)'},
             lineTension: 0.1,
             backgroundColor: 'rgba(140,140,140,0.4)',
             borderColor: 'rgba(140,140,140,1)',
@@ -203,8 +203,9 @@ export function DateRangeSelector({thisStock}:{thisStock:Stock}) {
     };
 
     return (
-        <LocalizationProvider dateAdapter={AdapterDayjs}>
-            <h1>Average Price in Time Range</h1>
+        // <LocalizationProvider dateAdapter={AdapterDayjs}>
+        <div>
+            <h1>Bollinger Bands</h1>
             <div>
                 <DatePicker label="End Date" minDate={minDate} maxDate={maxDate} value={endDate} onChange={(newValue) => setEndDate(newValue)}/>
                 <button onClick={queryRange}>Generate Graph</button>
@@ -213,7 +214,8 @@ export function DateRangeSelector({thisStock}:{thisStock:Stock}) {
             <div>
                 <Line width={100} height={50} data={toGraph} />
             </div>}
-        </LocalizationProvider>
+        </div>
+        // </LocalizationProvider>
         
     )
 }
