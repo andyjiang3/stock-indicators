@@ -48,3 +48,8 @@ export interface RollingMean {
     num_data_points: number,
     rolling_mean: number
 }
+
+export interface Bollinger {
+    date: number,
+    bollinger: number
+}

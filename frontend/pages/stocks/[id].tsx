@@ -1,6 +1,6 @@
 import { useRouter } from 'next/router'
 import NavBar from "@/components/NavBar"
-import { Stock, StockPeriod, RollingMean } from "../../constants/types"
+import { Stock, StockPeriod, RollingMean, Bollinger } from "../../constants/types"
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
@@ -91,6 +91,8 @@ export function DateRangeSelector({thisStock}:{thisStock:Stock}) {
 
     const [graphData, setGraphData] = useState<StockPeriod[] | null>(null);
     const [rollingMean, setRollingMean] = useState<RollingMean[] | null>(null);
+    const [upperBollinger, setUpperBollinger] = useState<Bollinger[] | null>(null);
+    const [lowerBollinger, setLowerBollinger] = useState<Bollinger[] | null>(null);
 
     const queryRange = async () => {
         const endDateVal = endDate.toJSON().substring(0, 10);
@@ -102,6 +104,16 @@ export function DateRangeSelector({thisStock}:{thisStock:Stock}) {
         const req_rolling = await fetch(`http://localhost:8080/rollingMean/${thisStock.symbol}?end=${endDate.toJSON().substring(0, 10)}&period=${period > 0 ? period : 1}`);
         const rollingData : RollingMean[] = await req_rolling.json();
         setRollingMean(rollingData);
+
+        const req_upper = await fetch(`http://localhost:8080/bollinger/${thisStock.symbol}?end=${endDate.toJSON().substring(0, 10)}&period=${period > 0 ? period : 1}&side=0`);
+        const upperData : Bollinger[] = await req_upper.json();
+        console.log(upperData);
+        setUpperBollinger(upperData);
+
+        const req_lower = await fetch(`http://localhost:8080/bollinger/${thisStock.symbol}?end=${endDate.toJSON().substring(0, 10)}&period=${period > 0 ? period : 1}&side=1`);
+        const lowerData : Bollinger[] = await req_lower.json();
+        console.log(lowerData);
+        setLowerBollinger(lowerData);
     }
 
     Chart.register(CategoryScale, LineElement, LineController, PointElement);
@@ -147,6 +159,46 @@ export function DateRangeSelector({thisStock}:{thisStock:Stock}) {
             pointRadius: 1,
             pointHitRadius: 10,
             data: rollingMean?.map((rolling : RollingMean) => rolling.rolling_mean)
+        }, {
+            label: 'Upper Bollinger',
+            fill: false,
+            lineTension: 0.1,
+            backgroundColor: 'rgba(140,140,140,0.4)',
+            borderColor: 'rgba(140,140,140,1)',
+            borderCapStyle: 'butt',
+            borderDash: [],
+            borderDashOffset: 0.0,
+            borderJoinStyle: 'miter',
+            pointBorderColor: 'rgba(140,140,140,1)',
+            pointBackgroundColor: '#fff',
+            pointBorderWidth: 1,
+            pointHoverRadius: 5,
+            pointHoverBackgroundColor: 'rgba(140,140,140,0,1)',
+            pointHoverBorderColor: 'rgba(220,220,220,1)',
+            pointHoverBorderWidth: 2,
+            pointRadius: 1,
+            pointHitRadius: 10,
+            data: upperBollinger?.map((b : Bollinger) => b.bollinger)
+        }, {
+            label: 'Lower Bollinger',
+            fill: false,
+            lineTension: 0.1,
+            backgroundColor: 'rgba(140,140,140,0.4)',
+            borderColor: 'rgba(140,140,140,1)',
+            borderCapStyle: 'butt',
+            borderDash: [],
+            borderDashOffset: 0.0,
+            borderJoinStyle: 'miter',
+            pointBorderColor: 'rgba(140,140,140,1)',
+            pointBackgroundColor: '#fff',
+            pointBorderWidth: 1,
+            pointHoverRadius: 5,
+            pointHoverBackgroundColor: 'rgba(140,140,140,1)',
+            pointHoverBorderColor: 'rgba(220,220,220,1)',
+            pointHoverBorderWidth: 2,
+            pointRadius: 1,
+            pointHitRadius: 10,
+            data: lowerBollinger?.map((b : Bollinger) => b.bollinger)
         }
         ]
     };
