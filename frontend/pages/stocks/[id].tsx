@@ -92,8 +92,8 @@ const Stock = ({
                 </tbody>
             </table>
 
-        <Select labelId="strategy-selector-label" id="strategy-selector" value={strategy} label="Strategy" onChange={changeStrat}>
-            <MenuItem value={0}>No Strategy Selected</MenuItem>
+        <Select labelId="strategy-selector-label" id="strategy-selector" value={strategy.toString()} label="Strategy" onChange={changeStrat}>
+            <MenuItem value={0}>Select Strategy...</MenuItem>
             <MenuItem value={1}>Mean Regression</MenuItem>
             <MenuItem value={2}>Other Selection</MenuItem>
         </Select>
@@ -237,7 +237,7 @@ export function MeanRegression({thisStock}:{thisStock:Stock}) {
     return (
         // <LocalizationProvider dateAdapter={AdapterDayjs}>
         <div>
-            <h1>Bollinger Bands</h1>
+            <div> </div>
             <div>
                 <DatePicker label="End Date" minDate={minDate} maxDate={maxDate} value={endDate} onChange={(newValue) => setEndDate(newValue)}/>
                 <button onClick={queryRange}>Generate Graph</button>

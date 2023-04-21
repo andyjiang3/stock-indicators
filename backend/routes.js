@@ -57,6 +57,21 @@ const market = async function(req, res) {
 });
 }
 
+//Get a random stock (for the home page)
+const random = async function(req, res) {
+  connection.query(`
+      SELECT * 
+      FROM Stock ORDER BY RAND() LIMIT 1;
+    `, (err, data) => {
+    if(err || data.length === 0){
+      console.log(err);
+      res.json({});
+    } else {
+      res.json(data[0]);
+    }
+  });
+}
+
 // Route 1: Find all information of the relevant stock (by stock symbol)
 const stocksID = async function(req, res) {
   const id = req.params['symbol'];
@@ -418,5 +433,5 @@ const rollingMean = (req, res) => {
 
 
 module.exports = {
-    stocks, stocksID, news, market, stockDayAvg, marketDateRange, stockAvgRange, stockInfoPeriod, volatility, bollinger, stockAllInfo, hotStocks, ranking, rollingMean
+    random, stocks, stocksID, news, market, stockDayAvg, marketDateRange, stockAvgRange, stockInfoPeriod, volatility, bollinger, stockAllInfo, hotStocks, ranking, rollingMean
 }
