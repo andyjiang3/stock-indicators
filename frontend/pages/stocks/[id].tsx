@@ -1,12 +1,12 @@
 import { useRouter } from 'next/router'
 import NavBar from "@/components/NavBar"
 import { Stock, StockPeriod, RollingMean, Bollinger, StockDayAvg } from "../../constants/types"
-import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { DatePicker } from '@mui/x-date-pickers';
 import dayjs from 'dayjs';
 import { useState } from 'react';
 import { Line } from 'react-chartjs-2'
 import { Chart, CategoryScale, LineElement, LineController, PointElement } from 'chart.js/auto'
+import { MenuItem, Select, SelectChangeEvent } from '@mui/material';
 
 export async function getStaticProps(context:any) {
     const { id } = context.params;
@@ -47,6 +47,22 @@ const Stock = ({
         return <div>The requested stock was not found.</div>
     }
 
+    const [strategy, setStrategy] = useState<number>(0);
+    const changeStrat = (event: SelectChangeEvent) => {
+        console.log(strategy + " to " + event.target.value);
+        setStrategy(+(event.target.value));
+    }
+
+    const renderStrategy = (param: number) => {
+        console.log(param)
+        switch(param) {
+            case 1:
+                return (<MeanRegression thisStock={stock}/>)
+            default:
+                return (<p>No Strategy Selected</p>)
+        }
+    }
+
     return (
     <div>
         <NavBar />
@@ -76,7 +92,14 @@ const Stock = ({
                 </tbody>
             </table>
 
-        <DateRangeSelector thisStock={stock}/>
+        <Select labelId="strategy-selector-label" id="strategy-selector" value={strategy} label="Strategy" onChange={changeStrat}>
+            <MenuItem value={0}>No Strategy Selected</MenuItem>
+            <MenuItem value={1}>Mean Regression</MenuItem>
+            <MenuItem value={2}>Other Selection</MenuItem>
+        </Select>
+
+        {renderStrategy(strategy)}
+        
 
     </div>
     )
@@ -88,7 +111,7 @@ function formatDates(data : StockDayAvg) {
     return {...data, date: formatted};
 }
 
-export function DateRangeSelector({thisStock}:{thisStock:Stock}) {
+export function MeanRegression({thisStock}:{thisStock:Stock}) {
     // const minDate = dayjs("2020-10-01"); 
     const minDate = dayjs("2020-10-20");
     const maxDate = dayjs("2022-07-29");
