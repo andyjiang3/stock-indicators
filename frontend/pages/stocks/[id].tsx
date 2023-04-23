@@ -49,12 +49,10 @@ const Stock = ({
 
     const [strategy, setStrategy] = useState<number>(0);
     const changeStrat = (event: SelectChangeEvent) => {
-        console.log(strategy + " to " + event.target.value);
         setStrategy(+(event.target.value));
     }
 
     const renderStrategy = (param: number) => {
-        console.log(param)
         switch(param) {
             case 1:
                 return (<MeanRegression thisStock={stock}/>)
@@ -129,13 +127,11 @@ export function MeanRegression({thisStock}:{thisStock:Stock}) {
 
         const req = await fetch(`http://localhost:8080/stockAvgRange/${thisStock.symbol}?end=${endDateVal}`);
         const close : StockDayAvg[] = await req.json();
-        console.log(close);
         const closeData : StockDayAvg[] = close.map((c : StockDayAvg) => formatDates(c));
         setGraphData(closeData);
 
         const req_rolling = await fetch(`http://localhost:8080/rollingMean/${thisStock.symbol}?end=${endDateVal}&period=20`);
         const rollingData : RollingMean[] = await req_rolling.json();
-        console.log(rollingData);
         setRollingMean(rollingData);
 
         const req_upper = await fetch(`http://localhost:8080/bollinger/${thisStock.symbol}?end=${endDateVal}&period=20&side=0`);
