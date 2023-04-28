@@ -12,6 +12,7 @@ app.use(cors({
 // General SELECT * FROM Table Endpoints
 app.get('/stocks', routes.stocks);
 app.get('/news', routes.news);
+app.get("/news/:symbol", routes.specificNews);
 app.get('/market', routes.market);
 app.get('/random', routes.random);
 

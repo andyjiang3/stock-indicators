@@ -42,6 +42,28 @@ const news = async function(req, res) {
 });
 }
 
+// Get all news from News table
+const specificNews = async function(req, res) {
+  const id = req.params["symbol"];
+  const dateStart = req.query.start ?? '2020-10-01'; //note: defaults to earliest date (10/01/2020)
+  const dateEnd = req.query.end ?? '2022-07-29'; //note: defaults to latest date (07/29/2022)
+  connection.query(
+    `
+    SELECT * 
+    FROM News N
+    where N.symbol = '${id}' AND N.date >= '${dateStart}' AND N.date <= '${dateEnd}';
+  `,
+    (err, data) => {
+      if (err || data.length === 0) {
+        console.log(err);
+        res.json({});
+      } else {
+        res.json(data);
+      }
+    }
+  );
+}
+
 //Get all data from Market table
 const market = async function(req, res) {
   connection.query(`
@@ -612,4 +634,5 @@ module.exports = {
   rollingMean,
   wieghtedRollingMean,
   expRollingMean,
+  specificNews,
 };
