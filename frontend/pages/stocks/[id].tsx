@@ -11,6 +11,7 @@ const Stock = ({}) => {
     const router = useRouter();
     const [strategy, setStrategy] = useState<number>(0);
     const [stockInfo, setStockInfo] = useState<Stock | null>(null);
+    const [newsData, setNewsData] = useState(null);
     const [startDate, setStartDate] = useState("2020-10-20");
     const [endDate, setEndDate] = useState("2022-07-29");
 
@@ -18,6 +19,7 @@ const Stock = ({}) => {
     const [graphData, setGraphData] = useState(null);
     const [period, setPeriod] = useState(20);
     const [isCalcStrat, setIsCalcStrat] = useState(false);
+    
 
     const stock = router.query.id;
     const maxDate = "2022-07-29";
@@ -35,6 +37,13 @@ const Stock = ({}) => {
                 res.json().then((resJson) => {
                     const formattedData = resJson.map((c : StockDayAvg) => formatDates(c));
                     setPriceData(formattedData);
+                })
+            );  
+
+            fetch(`http://localhost:8080/news/${stock}?start=${startDate}&end=${endDate}`).then((res) => 
+                res.json().then((resJson) => {
+                    const formattedData = resJson.map((c: any) => formatDates(c));
+                    setNewsData(formattedData);
                 })
             );  
         } 
@@ -252,7 +261,7 @@ const Stock = ({}) => {
     return (
         <div>
             <NavBar />
-            {!stockInfo || !priceData || !graphData ? 
+            {!stockInfo || !priceData || !graphData || !newsData ? 
             <div className="flex justify-center">
                 <CircularProgress/>
             </div> 
@@ -298,17 +307,43 @@ const Stock = ({}) => {
                      </div>
                 </div>
                 <h1 className="text-xl mt-5 mb-3 font-small">News Data</h1>
-                <p className="text-zinc-600 mb-10">Aggregated news data for {stock} from {startDate} to {endDate}</p>
-
-                <div className="grid grid-cols-7 gap-4 h-28 mb-8">
-                    {Object.keys(stockInfo).map((data, i) => {
-                        if (i != 0) {
-                            return (<div className="flex-row bg-white h-full w-full border border-gray-300 justify-center text-center p-1 pt-2 rounded-md">
-                                <div className="text-sm font-bold mb-3">{data.replaceAll("_", " ").split(" ").map((word) => word[0].toUpperCase() + word.substring(1)).join(" ")}</div>
-                                <div className="">{(stockInfo as any)[data]}</div>
-                            </div>)
-                        }
-                    })}
+                <p className="text-zinc-600 mb-10">News data for {stock} from {startDate} to {endDate} represented in volume</p>
+                <div className="relative overflow-x-auto">
+                    <table className="w-full text-sm text-left text-gray-500">
+                        <thead className="text-xs text-gray-700 uppercase bg-gray-50">
+                            <tr>
+                                {Object.keys(newsData[0]).map((key, i) => {
+                                    console.log(key)
+                                    if (i < 10) {
+                                        return (<th scope="col" className="px-6 py-3">
+                                        {key}
+                                         </th>)
+                                    }
+                                    
+                                })
+                                }
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {(newsData as any).map((data: any, j: any) => {
+                                if (j < 25) {
+                                    return (<tr className="bg-white border-b">
+                                        {Object.keys(newsData[0]).map((key, i) => {
+                                            if (i < 10) {
+                                                return (
+                                                    <td className="px-6 py-4">
+                                                        {(data as any)[key]}
+                                                    </td> 
+                                                )
+                                            }
+                                        
+                                        })
+                                        }
+                                    </tr>)
+                                }
+                            })}
+                        </tbody>
+                    </table>
                 </div>
             </div>
             
