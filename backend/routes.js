@@ -431,7 +431,150 @@ const rollingMean = (req, res) => {
 }
 
 
+// Route 12: Finds the rolling mean for the given stock in the given range of date with given period (window)
+const wieghtedRollingMean = (req, res) => {
+  const id = req.params['symbol'];
+  const dateStart = req.query.start ?? '2020-10-01'; //note: defaults to earliest date (10/01/2020)
+  const dateEnd = req.query.end ?? '2022-07-29'; //note: defaults to latest date (07/29/2022)
+  const period = req.query.period ?? 20;
+
+  connection.query(
+    `
+  WITH Valid_Dates AS (
+    SELECT DISTINCT M.symbol, M.date
+    FROM Market M
+    WHERE M.date >= '${dateStart}' AND M.date <= '${dateEnd}'
+    AND M.symbol = '${id}'
+  ),
+  Valid_Range_Dates AS (
+      SELECT DISTINCT M.*
+      FROM Market M
+      WHERE M.date >= DATE_SUB('${dateStart}', INTERVAL ${
+      period - 1
+    } DAY) AND M.date <= '${dateEnd}'
+      AND M.symbol = '${id}'
+  ),
+  Rolling_Data AS (
+      SELECT DISTINCT AI.*, AD.date AS starting_date, (${period} - DATEDIFF(AD.date, AI.date)) AS weight, close*(${period} - DATEDIFF(AD.date, AI.date)) as value 
+      FROM Valid_Dates AD
+          JOIN Valid_Range_Dates AI
+            ON AI.symbol = AD.symbol
+      WHERE AI.date >= DATE_SUB(AD.date, INTERVAL ${
+        period - 1
+      } DAY) AND AI.date <= AD.date
+  )
+  SELECT starting_date as date, COUNT(date) AS num_data_points, Sum(value)/Sum(weight) AS rolling_mean
+  FROM Rolling_Data
+  GROUP BY starting_date
+  `,
+    (err, data) => {
+      if (err || data.length == 0) {
+        console.log(err);
+        res.json({});
+      } else {
+        res.json(data);
+      }
+    }
+  );
+}
+
+
+
+
+const expRollingMean = (req, res) => {
+  const id = req.params["symbol"];
+  const dateStart = req.query.start ?? "2020-10-01"; //note: defaults to earliest date (10/01/2020)
+  const dateEnd = req.query.end ?? "2022-07-29"; //note: defaults to latest date (07/29/2022)
+  const period = req.query.period ?? 20;
+  const smoothing = req.query.smoothing ?? 2;
+
+  connection.query(
+    `
+  WITH Valid_Dates AS (
+    SELECT DISTINCT M.symbol, M.date
+    FROM Market M
+    WHERE M.date >= '${dateStart}' AND M.date <= '${dateEnd}'
+    AND M.symbol = '${id}'
+  ),
+  Valid_Range_Dates_sma AS (
+      SELECT DISTINCT M.*
+      FROM Market M
+      WHERE M.date >= DATE_SUB('${dateStart}', INTERVAL ${
+      period - 1
+    } DAY) AND M.date <= '${dateEnd}'
+      AND M.symbol = '${id}'
+  ),
+  Valid_Range_Dates AS (
+      SELECT DISTINCT M.*
+      FROM Market M
+      WHERE M.date >= DATE_SUB('${dateStart}', INTERVAL ${
+      2 * period - 1
+    } DAY) AND M.date <= '${dateEnd}'
+      AND M.symbol = '${id}'
+  ),
+  Rolling_Data AS (
+      SELECT DISTINCT AI.*, AD.date AS starting_date
+      FROM Valid_Dates AD
+          JOIN Valid_Range_Dates_sma AI
+            ON AI.symbol = AD.symbol
+      WHERE AI.date >= DATE_SUB(AD.date, INTERVAL ${
+        period - 1
+      } DAY) AND AI.date <= AD.date
+  ), 
+  SMA as (SELECT starting_date as date, COUNT(date) AS num_data_points, AVG(close) AS rolling_mean
+          FROM Rolling_Data
+          GROUP BY starting_date)
+  SELECT D.date as date, S.rolling_mean as rolling_mean, group_concat(A.close) as vals
+  from Valid_Range_Dates D join SMA S on D.date = DATE_ADD(S.date, INTERVAL ${
+    2 * period - 1
+  } DAY)
+        join Valid_Range_Dates_sma A on A.date > DATE_SUB(D.date, INTERVAL ${
+          period - 1
+        } DAY)
+        group by D.date
+  `,
+    (err, data) => {
+      if (err || data.length == 0) {
+        console.log(err);
+        res.json({});
+      } else {
+        var results = JSON.parse(JSON.stringify(data));
+        results = results.map((item) => {
+          const reversed = item.vals.split(",").reverse();
+          const n = reversed.length;
+          var prev = item.rolling_mean;
+          var ema = 0;
+          for (var i = 0; i < n; i++) {
+            var k = smoothing / (n + 1);
+            var close = reversed[i];
+            ema = k * (close - prev) + prev;
+          }
+          return { start_date: item.date, rolling_mean: ema };
+        });
+        res.send(results);
+      }
+    }
+  );
+};
+
+
 
 module.exports = {
-    random, stocks, stocksID, news, market, stockDayAvg, marketDateRange, stockAvgRange, stockInfoPeriod, volatility, bollinger, stockAllInfo, hotStocks, ranking, rollingMean
-}
+  random,
+  stocks,
+  stocksID,
+  news,
+  market,
+  stockDayAvg,
+  marketDateRange,
+  stockAvgRange,
+  stockInfoPeriod,
+  volatility,
+  bollinger,
+  stockAllInfo,
+  hotStocks,
+  ranking,
+  rollingMean,
+  wieghtedRollingMean,
+  expRollingMean,
+};
