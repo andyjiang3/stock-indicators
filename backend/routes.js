@@ -260,7 +260,7 @@ const bollinger = (req, res) => {
       WHERE AI.date >= DATE_SUB(AD.date, INTERVAL ${period - 1} DAY) AND AI.date <= AD.date
   ),
   Rolling_Mean AS (
-      SELECT starting_date as date, COUNT(date) AS num_data_points, AVG(close) AS rolling_mean
+      SELECT starting_date as date, COUNT(date) AS num_data_points, AVG(close) AS rolling_mean, close as actual
       FROM Rolling_Data
       GROUP BY starting_date
   ),
@@ -269,7 +269,7 @@ const bollinger = (req, res) => {
       FROM Rolling_Data
       GROUP BY starting_date
   )
-  SELECT Rolling_Mean.date as date, (Rolling_Mean.rolling_mean ${bollingerSide == 0 ? '+' : '-'} 2 * Rolling_STD.rolling_std) as bollinger
+  SELECT Rolling_Mean.date as date, (Rolling_Mean.rolling_mean ${bollingerSide == 0 ? '+' : '-'} 2 * Rolling_STD.rolling_std) as bollinger, Rolling_Mean.actual as actual
   FROM Rolling_Mean
       JOIN Rolling_STD
         ON Rolling_Mean.date = Rolling_STD.date
@@ -278,7 +278,14 @@ const bollinger = (req, res) => {
       console.log(err);
       res.json({});
     } else {
-      res.json(data);
+      var results = JSON.parse(JSON.stringify(data));
+      results = results.map((item) => {
+        var buy = bollingerSide == 0 && item.actual > item.bollinger;
+        var sell = bollingerSide != 0 && item.actual < item.bollinger;
+
+        return { ...item, buy, sell };
+      });
+      res.send(results);
     }
   });
 }
