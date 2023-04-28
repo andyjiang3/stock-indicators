@@ -3,7 +3,7 @@ import NavBar from "@/components/NavBar"
 import { Stock, StockPeriod, RollingMean, Bollinger, StockDayAvg } from "../../constants/types"
 import { DatePicker } from '@mui/x-date-pickers';
 import dayjs from 'dayjs';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Line } from 'react-chartjs-2'
 import { Chart, CategoryScale, LineElement, LineController, PointElement } from 'chart.js/auto'
 import { MenuItem, Select, SelectChangeEvent, CircularProgress} from '@mui/material';
@@ -16,13 +16,12 @@ const Stock = ({}) => {
     const [endDate, setEndDate] = useState("2022-07-29");
 
     const [priceData, setPriceData] = useState(null);
-    const [rollingMean, setRollingMean] = useState<RollingMean[] | null>(null);
-    const [upperBollinger, setUpperBollinger] = useState<Bollinger[] | null>(null);
-    const [lowerBollinger, setLowerBollinger] = useState<Bollinger[] | null>(null);
     const [graphData, setGraphData] = useState(null);
+    const [period, setPeriod] = useState(20);
 
     const stock = router.query.id;
-    const maxDate = dayjs("2022-07-29");
+    const maxDate = "2022-07-29";
+    const initialRender = useRef(true);
 
     useEffect(() => {
         if (stock) {
@@ -32,7 +31,7 @@ const Stock = ({}) => {
                 })
             );
 
-            fetch(`http://localhost:8080/stockAvgRange/${stock}?end=${endDate}`).then((res) => 
+            fetch(`http://localhost:8080/stockAvgRange/${stock}?start=${startDate}&end=${endDate}`).then((res) => 
                 res.json().then((resJson) => {
                     const formattedData = resJson.map((c : StockDayAvg) => formatDates(c));
                     setPriceData(formattedData);
@@ -42,37 +41,9 @@ const Stock = ({}) => {
     }, [stock])
 
     useEffect(() => {
+        // generate initial price graph
         if (stock && priceData) {
-            const graphData: any = {
-                labels: null,
-                datasets: []
-            }
-            const graphPriceData = {
-                label: 'Close',
-                fill: false,
-                lineTension: 0.1,
-                backgroundColor: 'rgba(0,125,255,0.4)',
-                borderColor: 'rgba(0,125,255,1)',
-                borderCapStyle: 'butt',
-                borderDash: [],
-                borderDashOffset: 0.0,
-                borderJoinStyle: 'miter',
-                pointBorderColor: 'rgba(0,125,255,1)',
-                pointBackgroundColor: '#fff',
-                pointBorderWidth: 1,
-                pointHoverRadius: 5,
-                pointHoverBackgroundColor: 'rgba(0,125,255,1)',
-                pointHoverBorderColor: 'rgba(220,220,220,1)',
-                pointHoverBorderWidth: 2,
-                pointRadius: 1,
-                pointHitRadius: 10,
-                data: (priceData as any).map((d : any) => d.close)
-            }
-            graphData['labels'] = (priceData as any).map((d: any) => d.date);
-            graphData['datasets'].push(graphPriceData);
-    
-            setGraphData(graphData);
-            console.log(graphData);
+            calcPriceGraph()
         }
     }, [priceData])
 
@@ -82,14 +53,177 @@ const Stock = ({}) => {
 
     const changeStrat = (event: SelectChangeEvent) => {
         setStrategy(parseInt(event.target.value));
+        renderStrategy(parseInt(event.target.value));
+    }
+
+    const calcPriceGraph = () => {
+        const newGraphData: any = {
+            labels: null,
+            datasets: []
+        }
+        const graphPriceData = {
+            label: 'Close',
+            fill: false,
+            lineTension: 0.1,
+            backgroundColor: 'rgba(0,125,255,0.4)',
+            borderColor: 'rgba(0,125,255,1)',
+            borderCapStyle: 'butt',
+            borderDash: [],
+            borderDashOffset: 0.0,
+            borderJoinStyle: 'miter',
+            pointBorderColor: 'rgba(0,125,255,1)',
+            pointBackgroundColor: '#fff',
+            pointBorderWidth: 1,
+            pointHoverRadius: 5,
+            pointHoverBackgroundColor: 'rgba(0,125,255,1)',
+            pointHoverBorderColor: 'rgba(220,220,220,1)',
+            pointHoverBorderWidth: 2,
+            pointRadius: 1,
+            pointHitRadius: 10,
+            data: (priceData as any).map((d : any) => d.close)
+        }
+        newGraphData['labels'] = (priceData as any).map((d: any) => d.date);
+        newGraphData['datasets'].push(graphPriceData);
+
+        setGraphData(newGraphData);
+    }
+
+    const calcMeanReversionGraph = async () => {
+        if (!graphData || !priceData) {
+            return;
+        }
+
+        const rollingMean = await fetch(`http://localhost:8080/rollingMean/${stock}?start=${startDate}&end=${endDate}&period=${period}`).then((res) => 
+            res.json().then((resJson) => {
+                return resJson
+            })
+        );  
+
+        const upperBollinger = await fetch(`http://localhost:8080/bollinger/${stock}?start=${startDate}&end=${endDate}&period=${period}&side=0`).then((res) => 
+            res.json().then((resJson) => {
+                return resJson
+            })
+        ); 
+
+        const lowerBollinger = await fetch(`http://localhost:8080/bollinger/${stock}?start=${startDate}&end=${endDate}&period=${period}&side=1`).then((res) => 
+            res.json().then((resJson) => {
+                return resJson
+            })
+        );
+
+        console.log("upper");
+        console.log(upperBollinger);
+        console.log("mean");
+        console.log(rollingMean);
+
+        const rollingMeanData = {
+            label: '20 ma',
+            fill: false,
+            lineTension: 0.1,
+            backgroundColor: 'rgba(255,171,0,0.4)',
+            borderColor: 'rgba(255,171,0,1)',
+            borderCapStyle: 'butt',
+            borderDash: [],
+            borderDashOffset: 0.0,
+            borderJoinStyle: 'miter',
+            pointBorderColor: 'rgba(255,171,0,1)',
+            pointBackgroundColor: '#fff',
+            pointBorderWidth: 1,
+            pointHoverRadius: 5,
+            pointHoverBackgroundColor: 'rgba(225,171,0,1)',
+            pointHoverBorderColor: 'rgba(220,220,220,1)',
+            pointHoverBorderWidth: 2,
+            pointRadius: 1,
+            pointHitRadius: 10,
+            data: (rollingMean as any).map((rolling : RollingMean) => rolling.rolling_mean)
+        }
+
+        const upperBollingerData = {
+            label: 'Upper Bollinger',
+            fill: false,
+            lineTension: 0.1,
+            backgroundColor: 'rgba(140,140,140,0.4)',
+            borderColor: 'rgba(140,140,140,1)',
+            borderCapStyle: 'butt',
+            borderDash: [],
+            borderDashOffset: 0.0,
+            borderJoinStyle: 'miter',
+            pointBorderColor: 'rgba(140,140,140,1)',
+            pointBackgroundColor: '#fff',
+            pointBorderWidth: 1,
+            pointHoverRadius: 5,
+            pointHoverBackgroundColor: 'rgba(140,140,140,0,1)',
+            pointHoverBorderColor: 'rgba(220,220,220,1)',
+            pointHoverBorderWidth: 2,
+            pointRadius: 1,
+            pointHitRadius: 10,
+            data: (upperBollinger as any).map((b : Bollinger) => b.bollinger)
+        }
+
+        const lowerBollingerData = {
+            label: 'Lower Bollinger',
+            fill: {target: '-1', above: 'rgba(140,140,140,0.2)'},
+            lineTension: 0.1,
+            backgroundColor: 'rgba(140,140,140,0.4)',
+            borderColor: 'rgba(140,140,140,1)',
+            borderCapStyle: 'butt',
+            borderDash: [],
+            borderDashOffset: 0.0,
+            borderJoinStyle: 'miter',
+            pointBorderColor: 'rgba(140,140,140,1)',
+            pointBackgroundColor: '#fff',
+            pointBorderWidth: 1,
+            pointHoverRadius: 5,
+            pointHoverBackgroundColor: 'rgba(140,140,140,1)',
+            pointHoverBorderColor: 'rgba(220,220,220,1)',
+            pointHoverBorderWidth: 2,
+            pointRadius: 1,
+            pointHitRadius: 10,
+            data: (lowerBollinger as any).map((b : Bollinger) => b.bollinger)
+        }
+
+        const newGraphData: any = {
+            labels: null,
+            datasets: []
+        }
+        const graphPriceData = {
+            label: 'Close',
+            fill: false,
+            lineTension: 0.1,
+            backgroundColor: 'rgba(0,125,255,0.4)',
+            borderColor: 'rgba(0,125,255,1)',
+            borderCapStyle: 'butt',
+            borderDash: [],
+            borderDashOffset: 0.0,
+            borderJoinStyle: 'miter',
+            pointBorderColor: 'rgba(0,125,255,1)',
+            pointBackgroundColor: '#fff',
+            pointBorderWidth: 1,
+            pointHoverRadius: 5,
+            pointHoverBackgroundColor: 'rgba(0,125,255,1)',
+            pointHoverBorderColor: 'rgba(220,220,220,1)',
+            pointHoverBorderWidth: 2,
+            pointRadius: 1,
+            pointHitRadius: 10,
+            data: (priceData as any).map((d : any) => d.close)
+        }
+        newGraphData['labels'] = (priceData as any).map((d: any) => d.date);
+        newGraphData['datasets'].push(graphPriceData);
+        (newGraphData['datasets'] as any).push(rollingMeanData);
+        (newGraphData['datasets'] as any).push(upperBollingerData);
+        (newGraphData['datasets'] as any).push(lowerBollingerData);
+        setGraphData(newGraphData);
+        console.log(newGraphData);
     }
 
     const renderStrategy = (param: number) => {
+        console.log("hi");
         switch (param) {
+            case 0:
+                calcPriceGraph();
+                return <p>No strategy selected</p>
             case 1:
-                return (<MeanRegression thisStock={stockInfo}/>)
-            default:
-                return (<p>No Strategy Selected</p>)
+                calcMeanReversionGraph();
         }
     }
 
@@ -109,13 +243,15 @@ const Stock = ({}) => {
                     <h2 className="text-xl text-zinc-800">{stockInfo.security}</h2>
                 </div>
 
-                <div className="grid grid-cols-8 gap-4 h-28 mb-8">
-                    {Object.keys(stockInfo).map((data) => (
-                        <div className="flex-row bg-white h-full w-full border border-gray-300 justify-center text-center p-1 pt-2 rounded-md">
-                            <div className="text-sm font-bold mb-3">{data.replaceAll("_", " ").split(" ").map((word) => word[0].toUpperCase() + word.substring(1)).join(" ")}</div>
-                            <div className="">{(stockInfo as any)[data]}</div>
-                        </div>
-                    ))}
+                <div className="grid grid-cols-7 gap-4 h-28 mb-8">
+                    {Object.keys(stockInfo).map((data, i) => {
+                        if (i != 0) {
+                            return (<div className="flex-row bg-white h-full w-full border border-gray-300 justify-center text-center p-1 pt-2 rounded-md">
+                                <div className="text-sm font-bold mb-3">{data.replaceAll("_", " ").split(" ").map((word) => word[0].toUpperCase() + word.substring(1)).join(" ")}</div>
+                                <div className="">{(stockInfo as any)[data]}</div>
+                            </div>)
+                        }
+                    })}
                 </div>
                 
                 <div className="flex">
@@ -125,17 +261,12 @@ const Stock = ({}) => {
                     </div>
                     <div className="w-1/3 flex-row m-0 justify-start pl-10">
                         <h1 className="text-xl mt-5 font-small mb-7">Trading Strategy</h1>
-                        <Select labelId="strategy-selector-label" id="strategy-selector" value={strategy.toString()} label="Strategy" onChange={changeStrat}>
+                        <Select className="mb-5" labelId="strategy-selector-label" id="strategy-selector" value={strategy.toString()} label="Strategy" onChange={changeStrat}>
                             <MenuItem value={0}>No Strategy</MenuItem>
-                            <MenuItem value={1}>Mean Regression</MenuItem>
+                            <MenuItem value={1}>Mean Reversion</MenuItem>
                         </Select>
                     </div>
                 </div>
-               
-
-
-
-                {/* {renderStrategy(strategy)} */}
             </div>}
         </div>
     )
@@ -146,149 +277,6 @@ function formatDates(data : StockDayAvg) {
     const formatted = toDate.toISOString().slice(0, 10);
     return {...data, date: formatted};
 }
-
-export function MeanRegression({
-    thisStock
-}:{ thisStock: Stock | null }) {
-    // const minDate = dayjs("2020-10-01"); 
-    const minDate = dayjs("2020-10-20");
-    const maxDate = dayjs("2022-07-29");
-
-    const [endDate, setEndDate] = useState<Date>(maxDate);
-
-    const [graphData, setGraphData] = useState<StockDayAvg[] | null>(null);
-    const [rollingMean, setRollingMean] = useState<RollingMean[] | null>(null);
-    const [upperBollinger, setUpperBollinger] = useState<Bollinger[] | null>(null);
-    const [lowerBollinger, setLowerBollinger] = useState<Bollinger[] | null>(null);
-
-    const queryRange = async () => {
-        const endDateVal = endDate.toJSON().substring(0, 10);
-        // const period = dayjs(endDateVal).diff("2020-10-01", 'day');
-
-        const req = await fetch(`http://localhost:8080/stockAvgRange/${thisStock.symbol}?end=${endDateVal}`);
-        const close : StockDayAvg[] = await req.json();
-        const closeData : StockDayAvg[] = close.map((c : StockDayAvg) => formatDates(c));
-        setGraphData(closeData);
-
-        const req_rolling = await fetch(`http://localhost:8080/rollingMean/${thisStock.symbol}?end=${endDateVal}&period=20`);
-        const rollingData : RollingMean[] = await req_rolling.json();
-        setRollingMean(rollingData);
-
-        const req_upper = await fetch(`http://localhost:8080/bollinger/${thisStock.symbol}?end=${endDateVal}&period=20&side=0`);
-        const upperData : Bollinger[] = await req_upper.json();
-        setUpperBollinger(upperData);
-
-        const req_lower = await fetch(`http://localhost:8080/bollinger/${thisStock.symbol}?end=${endDateVal}&period=20&side=1`);
-        const lowerData : Bollinger[] = await req_lower.json();
-        setLowerBollinger(lowerData);
-    }
-
-    Chart.register(CategoryScale, LineElement, LineController, PointElement);
-    const toGraph = {
-        labels: graphData?.map((d : StockDayAvg) => d.date),
-        datasets: [{
-            label: 'Close',
-            fill: false,
-            lineTension: 0.1,
-            backgroundColor: 'rgba(0,125,255,0.4)',
-            borderColor: 'rgba(0,125,255,1)',
-            borderCapStyle: 'butt',
-            borderDash: [],
-            borderDashOffset: 0.0,
-            borderJoinStyle: 'miter',
-            pointBorderColor: 'rgba(0,125,255,1)',
-            pointBackgroundColor: '#fff',
-            pointBorderWidth: 1,
-            pointHoverRadius: 5,
-            pointHoverBackgroundColor: 'rgba(0,125,255,1)',
-            pointHoverBorderColor: 'rgba(220,220,220,1)',
-            pointHoverBorderWidth: 2,
-            pointRadius: 1,
-            pointHitRadius: 10,
-            data: graphData?.map((d : StockDayAvg) => d.close)
-        }, {
-            label: '20 ma',
-            fill: false,
-            lineTension: 0.1,
-            backgroundColor: 'rgba(255,171,0,0.4)',
-            borderColor: 'rgba(255,171,0,1)',
-            borderCapStyle: 'butt',
-            borderDash: [],
-            borderDashOffset: 0.0,
-            borderJoinStyle: 'miter',
-            pointBorderColor: 'rgba(255,171,0,1)',
-            pointBackgroundColor: '#fff',
-            pointBorderWidth: 1,
-            pointHoverRadius: 5,
-            pointHoverBackgroundColor: 'rgba(225,171,0,1)',
-            pointHoverBorderColor: 'rgba(220,220,220,1)',
-            pointHoverBorderWidth: 2,
-            pointRadius: 1,
-            pointHitRadius: 10,
-            data: rollingMean?.map((rolling : RollingMean) => rolling.rolling_mean)
-        }, {
-            label: 'Upper Bollinger',
-            fill: false,
-            lineTension: 0.1,
-            backgroundColor: 'rgba(140,140,140,0.4)',
-            borderColor: 'rgba(140,140,140,1)',
-            borderCapStyle: 'butt',
-            borderDash: [],
-            borderDashOffset: 0.0,
-            borderJoinStyle: 'miter',
-            pointBorderColor: 'rgba(140,140,140,1)',
-            pointBackgroundColor: '#fff',
-            pointBorderWidth: 1,
-            pointHoverRadius: 5,
-            pointHoverBackgroundColor: 'rgba(140,140,140,0,1)',
-            pointHoverBorderColor: 'rgba(220,220,220,1)',
-            pointHoverBorderWidth: 2,
-            pointRadius: 1,
-            pointHitRadius: 10,
-            data: upperBollinger?.map((b : Bollinger) => b.bollinger)
-        }, {
-            label: 'Lower Bollinger',
-            fill: {target: '-1', above: 'rgba(140,140,140,0.2)'},
-            lineTension: 0.1,
-            backgroundColor: 'rgba(140,140,140,0.4)',
-            borderColor: 'rgba(140,140,140,1)',
-            borderCapStyle: 'butt',
-            borderDash: [],
-            borderDashOffset: 0.0,
-            borderJoinStyle: 'miter',
-            pointBorderColor: 'rgba(140,140,140,1)',
-            pointBackgroundColor: '#fff',
-            pointBorderWidth: 1,
-            pointHoverRadius: 5,
-            pointHoverBackgroundColor: 'rgba(140,140,140,1)',
-            pointHoverBorderColor: 'rgba(220,220,220,1)',
-            pointHoverBorderWidth: 2,
-            pointRadius: 1,
-            pointHitRadius: 10,
-            data: lowerBollinger?.map((b : Bollinger) => b.bollinger)
-        }
-        ]
-    };
-
-    return (
-        // <LocalizationProvider dateAdapter={AdapterDayjs}>
-        <div>
-            <div> </div>
-            <div>
-                <DatePicker label="End Date" minDate={minDate} maxDate={maxDate} value={endDate} onChange={(newValue) => setEndDate(newValue)}/>
-                <button onClick={queryRange}>Generate Graph</button>
-            </div>
-            {graphData &&
-            <div>
-                <Line width={100} height={50} data={toGraph} />
-            </div>}
-        </div>
-        // </LocalizationProvider>
-        
-    )
-}
-
-
 
 
 export default Stock;
