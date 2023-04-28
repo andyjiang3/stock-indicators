@@ -12,18 +12,69 @@ const Stock = ({}) => {
     const router = useRouter();
     const [strategy, setStrategy] = useState<number>(0);
     const [stockInfo, setStockInfo] = useState<Stock | null>(null);
+    const [startDate, setStartDate] = useState("2020-10-20");
+    const [endDate, setEndDate] = useState("2022-07-29");
+
+    const [priceData, setPriceData] = useState(null);
+    const [rollingMean, setRollingMean] = useState<RollingMean[] | null>(null);
+    const [upperBollinger, setUpperBollinger] = useState<Bollinger[] | null>(null);
+    const [lowerBollinger, setLowerBollinger] = useState<Bollinger[] | null>(null);
+    const [graphData, setGraphData] = useState(null);
+
     const stock = router.query.id;
+    const maxDate = dayjs("2022-07-29");
 
     useEffect(() => {
         if (stock) {
-            console.log(stock);
             fetch(`http://localhost:8080/stocks/${stock}`).then((res) => 
                 res.json().then((resJson: Stock) => {
                     setStockInfo(resJson);
                 })
             );
+
+            fetch(`http://localhost:8080/stockAvgRange/${stock}?end=${endDate}`).then((res) => 
+                res.json().then((resJson) => {
+                    const formattedData = resJson.map((c : StockDayAvg) => formatDates(c));
+                    setPriceData(formattedData);
+                })
+            );  
         } 
     }, [stock])
+
+    useEffect(() => {
+        if (stock && priceData) {
+            const graphData: any = {
+                labels: null,
+                datasets: []
+            }
+            const graphPriceData = {
+                label: 'Close',
+                fill: false,
+                lineTension: 0.1,
+                backgroundColor: 'rgba(0,125,255,0.4)',
+                borderColor: 'rgba(0,125,255,1)',
+                borderCapStyle: 'butt',
+                borderDash: [],
+                borderDashOffset: 0.0,
+                borderJoinStyle: 'miter',
+                pointBorderColor: 'rgba(0,125,255,1)',
+                pointBackgroundColor: '#fff',
+                pointBorderWidth: 1,
+                pointHoverRadius: 5,
+                pointHoverBackgroundColor: 'rgba(0,125,255,1)',
+                pointHoverBorderColor: 'rgba(220,220,220,1)',
+                pointHoverBorderWidth: 2,
+                pointRadius: 1,
+                pointHitRadius: 10,
+                data: (priceData as any).map((d : any) => d.close)
+            }
+            graphData['labels'] = (priceData as any).map((d: any) => d.date);
+            graphData['datasets'].push(graphPriceData);
+    
+            setGraphData(graphData);
+            console.log(graphData);
+        }
+    }, [priceData])
 
     if (!stock) {
         return <div>The requested stock was not found.</div>
@@ -42,25 +93,37 @@ const Stock = ({}) => {
         }
     }
 
+    Chart.register(CategoryScale, LineElement, LineController, PointElement);
+
     return (
         <div>
             <NavBar />
-            {!stockInfo ? 
+            {!stockInfo || !priceData || !graphData ? 
             <div className="flex justify-center">
                 <CircularProgress/>
-            </div> :
-                <div className="p-10 pt-5">
+            </div> 
+            :
+            <div className="p-10 pt-5">
                 <div className="flex justify-start items-baseline flex-col mb-5">
                     <h1 className="text-4xl bold">{stockInfo.symbol}</h1>
-                    <h2 className="text-xl text-zinc-800">{stockInfo.security}</h2>
+                    <h2 className="text-xl text-zinc-800 mb-10">{stockInfo.security}</h2>
                 </div>
+
+
                 <Select labelId="strategy-selector-label" id="strategy-selector" value={strategy.toString()} label="Strategy" onChange={changeStrat}>
                     <MenuItem value={0}>Select Strategy...</MenuItem>
                     <MenuItem value={1}>Mean Regression</MenuItem>
                     <MenuItem value={2}>Other Selection</MenuItem>
                 </Select>
+                
+                <h1 className="text-xl mt-5 font-small">Stock Price</h1>
+                <div className="w-full flex m-0 justify-center">
+                    <Line className="flex m-0" width={100} height={50} data={graphData} />
+                </div>
 
-                {renderStrategy(strategy)}
+
+
+                {/* {renderStrategy(strategy)} */}
             </div>}
         </div>
     )

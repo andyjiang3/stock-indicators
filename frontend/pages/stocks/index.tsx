@@ -1,7 +1,6 @@
 import NavBar from "@/components/NavBar"
 import Link from "next/link"
 import { FormEvent, useEffect, useState } from "react"
-import { TextField } from "@mui/material"
 
 import { Stock } from "../../constants/types"
 
