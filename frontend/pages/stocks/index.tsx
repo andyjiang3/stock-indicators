@@ -13,11 +13,13 @@ const StocksHome = () => {
     }
 
     useEffect(() => {
-        fetch(`http://localhost:8080/stocks`).then((res) => 
-            res.json().then((resJson: Stock[]) => {
-                setStocks(resJson);
-            })
-        )
+        if (!stocks) {
+            fetch(`http://localhost:8080/stocks`).then((res) => 
+                res.json().then((resJson: Stock[]) => {
+                    setStocks(resJson);
+                })
+            )
+        }
     }, [stocks])
 
     return (
@@ -34,7 +36,7 @@ const StocksHome = () => {
                             return stock.symbol.toLowerCase().startsWith(searchVal.toLowerCase()) || stock.security.toLowerCase().startsWith(searchVal.toLowerCase());
                         }).map((stock: Stock) => (
                         <li key={stock.symbol}>
-                            <Link href={`/stocks/${stock.symbol}`}>{stock.symbol} – {stock.security}</Link>
+                            <Link href={`/stocks/${stock.symbol}`}>{stock.symbol} - {stock.security}</Link>
                         </li>
                     ))}
                     </ul>

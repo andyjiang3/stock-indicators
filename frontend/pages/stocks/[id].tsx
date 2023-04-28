@@ -3,103 +3,66 @@ import NavBar from "@/components/NavBar"
 import { Stock, StockPeriod, RollingMean, Bollinger, StockDayAvg } from "../../constants/types"
 import { DatePicker } from '@mui/x-date-pickers';
 import dayjs from 'dayjs';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Line } from 'react-chartjs-2'
 import { Chart, CategoryScale, LineElement, LineController, PointElement } from 'chart.js/auto'
-import { MenuItem, Select, SelectChangeEvent } from '@mui/material';
+import { MenuItem, Select, SelectChangeEvent, CircularProgress} from '@mui/material';
 
-export async function getStaticProps(context:any) {
-    const { id } = context.params;
-    const request = await fetch(`http://localhost:8080/stocks/${id}`);
-    const stock : Stock = await request.json();
-
-    return {
-        props: {
-            stock
-        }
-    };
-}
-
-export async function getStaticPaths() {
-    const request = await fetch(`http://localhost:8080/stocks`);
-    const allStocks = await request.json();
-
-    const paths = allStocks.map((stock: Stock) => ({
-        params: { id: stock.symbol}
-    }));
-
-    return {
-        paths,
-        fallback: false
-    }
-}
-
-interface StockProps {
-    stock: Stock
-}
-
-const Stock = ({
-    stock
-}: StockProps) => {
+const Stock = ({}) => {
     const router = useRouter();
+    const [strategy, setStrategy] = useState<number>(0);
+    const [stockInfo, setStockInfo] = useState<Stock | null>(null);
+    const stock = router.query.id;
 
-    if(!stock) {
+    useEffect(() => {
+        if (stock) {
+            console.log(stock);
+            fetch(`http://localhost:8080/stocks/${stock}`).then((res) => 
+                res.json().then((resJson: Stock) => {
+                    setStockInfo(resJson);
+                })
+            );
+        } 
+    }, [stock])
+
+    if (!stock) {
         return <div>The requested stock was not found.</div>
     }
 
-    const [strategy, setStrategy] = useState<number>(0);
     const changeStrat = (event: SelectChangeEvent) => {
-        setStrategy(+(event.target.value));
+        setStrategy(parseInt(event.target.value));
     }
 
     const renderStrategy = (param: number) => {
-        switch(param) {
+        switch (param) {
             case 1:
-                return (<MeanRegression thisStock={stock}/>)
+                return (<MeanRegression thisStock={stockInfo}/>)
             default:
                 return (<p>No Strategy Selected</p>)
         }
     }
 
     return (
-    <div>
-        <NavBar />
-            <h1>Information About "{stock.symbol}"</h1>
-            <table border={1} cellSpacing={3}>
-                <tbody>
-                    <tr>
-                        <th>Symbol</th>
-                        <th>Security</th>
-                        <th>GICS Sector</th>
-                        <th>GICS Sub Industry</th>
-                        <th>HQ Location</th>
-                        <th>Date Added</th>
-                        <th>CIK</th>
-                        <th>Year Founded</th>
-                    </tr>
-                    <tr>
-                        <td>{stock.symbol}</td>
-                        <td>{stock.security}</td>
-                        <td>{stock.gics_sector}</td>
-                        <td>{stock.gics_sub_industry}</td>
-                        <td>{stock.headquarters_location}</td>
-                        <td>{stock.date_first_added}</td>
-                        <td>{stock.cik}</td>
-                        <td>{stock.founded}</td>
-                    </tr>
-                </tbody>
-            </table>
+        <div>
+            <NavBar />
+            {!stockInfo ? 
+            <div className="flex justify-center">
+                <CircularProgress/>
+            </div> :
+                <div className="p-10 pt-5">
+                <div className="flex justify-start items-baseline flex-col mb-5">
+                    <h1 className="text-4xl bold">{stockInfo.symbol}</h1>
+                    <h2 className="text-xl text-zinc-800">{stockInfo.security}</h2>
+                </div>
+                <Select labelId="strategy-selector-label" id="strategy-selector" value={strategy.toString()} label="Strategy" onChange={changeStrat}>
+                    <MenuItem value={0}>Select Strategy...</MenuItem>
+                    <MenuItem value={1}>Mean Regression</MenuItem>
+                    <MenuItem value={2}>Other Selection</MenuItem>
+                </Select>
 
-        <Select labelId="strategy-selector-label" id="strategy-selector" value={strategy.toString()} label="Strategy" onChange={changeStrat}>
-            <MenuItem value={0}>Select Strategy...</MenuItem>
-            <MenuItem value={1}>Mean Regression</MenuItem>
-            <MenuItem value={2}>Other Selection</MenuItem>
-        </Select>
-
-        {renderStrategy(strategy)}
-        
-
-    </div>
+                {renderStrategy(strategy)}
+            </div>}
+        </div>
     )
 }
 
@@ -109,7 +72,9 @@ function formatDates(data : StockDayAvg) {
     return {...data, date: formatted};
 }
 
-export function MeanRegression({thisStock}:{thisStock:Stock}) {
+export function MeanRegression({
+    thisStock
+}:{ thisStock: Stock | null }) {
     // const minDate = dayjs("2020-10-01"); 
     const minDate = dayjs("2020-10-20");
     const maxDate = dayjs("2022-07-29");
