@@ -2,11 +2,10 @@ import { useRouter } from 'next/router'
 import NavBar from "@/components/NavBar"
 import { Stock, StockPeriod, RollingMean, Bollinger, StockDayAvg } from "../../constants/types"
 import { DatePicker } from '@mui/x-date-pickers';
-import dayjs from 'dayjs';
 import { useEffect, useRef, useState } from 'react';
 import { Line } from 'react-chartjs-2'
 import { Chart, CategoryScale, LineElement, LineController, PointElement } from 'chart.js/auto'
-import { MenuItem, Select, SelectChangeEvent, CircularProgress} from '@mui/material';
+import { MenuItem, Select, SelectChangeEvent, CircularProgress, Button} from '@mui/material';
 
 const Stock = ({}) => {
     const router = useRouter();
@@ -18,6 +17,7 @@ const Stock = ({}) => {
     const [priceData, setPriceData] = useState(null);
     const [graphData, setGraphData] = useState(null);
     const [period, setPeriod] = useState(20);
+    const [isCalcStrat, setIsCalcStrat] = useState(false);
 
     const stock = router.query.id;
     const maxDate = "2022-07-29";
@@ -53,7 +53,6 @@ const Stock = ({}) => {
 
     const changeStrat = (event: SelectChangeEvent) => {
         setStrategy(parseInt(event.target.value));
-        renderStrategy(parseInt(event.target.value));
     }
 
     const calcPriceGraph = () => {
@@ -216,14 +215,35 @@ const Stock = ({}) => {
         console.log(newGraphData);
     }
 
-    const renderStrategy = (param: number) => {
-        console.log("hi");
-        switch (param) {
+    const calcStrategy = (strategyNumber: number):void => {
+        setIsCalcStrat(true);
+        switch (strategyNumber) {
             case 0:
                 calcPriceGraph();
-                return <p>No strategy selected</p>
+                break;
             case 1:
                 calcMeanReversionGraph();
+                break;
+        }
+        setIsCalcStrat(false);
+    }
+    
+    const renderTradingOptions = (strategyNumber: number) => {
+        switch (strategyNumber) {
+            case 0:
+                return <div className="mb-5">No strategy selected</div>
+            case 1:
+                return <>
+                    <h1 className="text-l font-medium mb-2">How it works</h1>
+                    <div className="mb-5">Mean-reversion strategies work on the assumption that there is an underlying stable trend in the price of an asset and prices fluctuate randomly around this trend . Therefore, values deviating far from the trend will tend to reverse direction and revert back to the trend.</div>
+                    <h1 className="text-l mt-5 font-medium mb-2">Options</h1>
+                    <div className="mb-3">
+                        <h1 className="inline-block text-l mt-5 font-small mb-2 mr-5">Period</h1>
+                        <input className="inline-block p-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Period Number" onChange={(event: React.ChangeEvent<HTMLInputElement>) => setPeriod(parseInt(event.target.value))} defaultValue={period}></input>
+                    </div>
+                    <p className="text-zinc-600 mb-10">This specifies a window of days to extract data from for each date. Higher period would therefore lead to more generalized aggregations.</p>
+                </>
+                
         }
     }
 
@@ -261,13 +281,38 @@ const Stock = ({}) => {
                     </div>
                     <div className="w-1/3 flex-row m-0 justify-start pl-10">
                         <h1 className="text-xl mt-5 font-small mb-7">Trading Strategy</h1>
-                        <Select className="mb-5" labelId="strategy-selector-label" id="strategy-selector" value={strategy.toString()} label="Strategy" onChange={changeStrat}>
-                            <MenuItem value={0}>No Strategy</MenuItem>
-                            <MenuItem value={1}>Mean Reversion</MenuItem>
-                        </Select>
-                    </div>
+                        {
+                            isCalcStrat ? <CircularProgress/> 
+                            :
+                            <>
+                             <div>
+                                <Select className="mb-5" labelId="strategy-selector-label" id="strategy-selector" value={strategy.toString()} label="Strategy" onChange={changeStrat}>
+                                    <MenuItem value={0}>No Strategy</MenuItem>
+                                    <MenuItem value={1}>Mean Reversion</MenuItem>
+                                </Select>
+                            </div>
+                            {renderTradingOptions(strategy)}
+                            <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onClick={() => calcStrategy(strategy)}>Generate</button>
+                            </>
+                        }
+                     </div>
                 </div>
-            </div>}
+                <h1 className="text-xl mt-5 mb-3 font-small">News Data</h1>
+                <p className="text-zinc-600 mb-10">Aggregated news data for {stock} from {startDate} to {endDate}</p>
+
+                <div className="grid grid-cols-7 gap-4 h-28 mb-8">
+                    {Object.keys(stockInfo).map((data, i) => {
+                        if (i != 0) {
+                            return (<div className="flex-row bg-white h-full w-full border border-gray-300 justify-center text-center p-1 pt-2 rounded-md">
+                                <div className="text-sm font-bold mb-3">{data.replaceAll("_", " ").split(" ").map((word) => word[0].toUpperCase() + word.substring(1)).join(" ")}</div>
+                                <div className="">{(stockInfo as any)[data]}</div>
+                            </div>)
+                        }
+                    })}
+                </div>
+            </div>
+            
+            }
         </div>
     )
 }
