@@ -397,7 +397,7 @@ const rollingMean = (req, res) => {
 
   connection.query(`
   WITH Valid_Dates AS (
-    SELECT DISTINCT M.symbol, M.date
+    SELECT DISTINCT M.symbol, M.date, M.close
     FROM Market M
     WHERE M.date >= '${dateStart}' AND M.date <= '${dateEnd}'
     AND M.symbol = '${id}'
@@ -409,13 +409,13 @@ const rollingMean = (req, res) => {
       AND M.symbol = '${id}'
   ),
   Rolling_Data AS (
-      SELECT DISTINCT AI.*, AD.date AS starting_date
+      SELECT DISTINCT AI.*, AD.date AS starting_date, AD.close as actual
       FROM Valid_Dates AD
           JOIN Valid_Range_Dates AI
             ON AI.symbol = AD.symbol
       WHERE AI.date >= DATE_SUB(AD.date, INTERVAL ${period - 1} DAY) AND AI.date <= AD.date
   )
-  SELECT starting_date as date, COUNT(date) AS num_data_points, AVG(close) AS rolling_mean
+  SELECT actual, starting_date as date, COUNT(date) AS num_data_points, AVG(close) AS rolling_mean
   FROM Rolling_Data
   GROUP BY starting_date
   `,
@@ -424,7 +424,20 @@ const rollingMean = (req, res) => {
         console.log(err);
         res.json({});
       } else {
-        res.json(data);
+        var switched = true;
+        var prevPosition = true;
+        var results = JSON.parse(JSON.stringify(data));
+        results = results.map((item) => {
+          var rolling_mean = item.rolling_mean;
+          var buy = switched && item.actual < rolling_mean;
+          var sell = switched && item.actual > rolling_mean;
+          position = item.actual < rolling_mean;
+          switched = position != prevPosition;
+          prevPosition = position;
+
+          return { ...item, buy, sell };
+        });
+        res.send(results);
       }
     }
   );
@@ -441,7 +454,7 @@ const wieghtedRollingMean = (req, res) => {
   connection.query(
     `
   WITH Valid_Dates AS (
-    SELECT DISTINCT M.symbol, M.date
+    SELECT DISTINCT M.symbol, M.date, M.close
     FROM Market M
     WHERE M.date >= '${dateStart}' AND M.date <= '${dateEnd}'
     AND M.symbol = '${id}'
@@ -455,7 +468,7 @@ const wieghtedRollingMean = (req, res) => {
       AND M.symbol = '${id}'
   ),
   Rolling_Data AS (
-      SELECT DISTINCT AI.*, AD.date AS starting_date, (${period} - DATEDIFF(AD.date, AI.date)) AS weight, close*(${period} - DATEDIFF(AD.date, AI.date)) as value 
+      SELECT DISTINCT AI.*, AD.date AS starting_date, AD.close as actual, (${period} - DATEDIFF(AD.date, AI.date)) AS weight, AI.close*(${period} - DATEDIFF(AD.date, AI.date)) as value 
       FROM Valid_Dates AD
           JOIN Valid_Range_Dates AI
             ON AI.symbol = AD.symbol
@@ -463,7 +476,7 @@ const wieghtedRollingMean = (req, res) => {
         period - 1
       } DAY) AND AI.date <= AD.date
   )
-  SELECT starting_date as date, COUNT(date) AS num_data_points, Sum(value)/Sum(weight) AS rolling_mean
+  SELECT actual, starting_date as date, COUNT(date) AS num_data_points, Sum(value)/Sum(weight) AS rolling_mean
   FROM Rolling_Data
   GROUP BY starting_date
   `,
@@ -472,7 +485,20 @@ const wieghtedRollingMean = (req, res) => {
         console.log(err);
         res.json({});
       } else {
-        res.json(data);
+        var switched = true;
+        var prevPosition = true;
+        var results = JSON.parse(JSON.stringify(data));
+        results = results.map((item) => {
+          var rolling_mean = item.rolling_mean;
+          var buy = switched && item.actual < rolling_mean;
+          var sell = switched && item.actual > rolling_mean;
+          position = item.actual < rolling_mean;
+          switched = position != prevPosition;
+          prevPosition = position;
+
+          return { ...item, buy, sell };
+        });
+        res.send(results);
       }
     }
   );
@@ -524,7 +550,7 @@ const expRollingMean = (req, res) => {
   SMA as (SELECT starting_date as date, COUNT(date) AS num_data_points, AVG(close) AS rolling_mean
           FROM Rolling_Data
           GROUP BY starting_date)
-  SELECT D.date as date, S.rolling_mean as rolling_mean, group_concat(A.close) as vals
+  SELECT D.date as date, S.rolling_mean as rolling_mean, group_concat(A.close) as vals, D.close as actual
   from Valid_Range_Dates D join SMA S on D.date = DATE_ADD(S.date, INTERVAL ${
     2 * period - 1
   } DAY)
@@ -538,6 +564,8 @@ const expRollingMean = (req, res) => {
         console.log(err);
         res.json({});
       } else {
+        var switched = true;
+        var prevPosition = true;
         var results = JSON.parse(JSON.stringify(data));
         results = results.map((item) => {
           const reversed = item.vals.split(",").reverse();
@@ -549,7 +577,14 @@ const expRollingMean = (req, res) => {
             var close = reversed[i];
             ema = k * (close - prev) + prev;
           }
-          return { start_date: item.date, rolling_mean: ema };
+          var buy = switched && item.actual < ema;
+          var sell = switched && item.actual > ema;
+          position = item.actual < ema;
+          switched = position != prevPosition
+          prevPosition = position
+
+
+          return { start_date: item.date, rolling_mean: ema, buy, sell };
         });
         res.send(results);
       }
