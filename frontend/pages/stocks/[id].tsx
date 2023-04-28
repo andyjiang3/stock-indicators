@@ -5,7 +5,7 @@ import { DatePicker } from '@mui/x-date-pickers';
 import { useEffect, useRef, useState } from 'react';
 import { Line } from 'react-chartjs-2'
 import { Chart, CategoryScale, LineElement, LineController, PointElement } from 'chart.js/auto'
-import { MenuItem, Select, SelectChangeEvent, CircularProgress, Button} from '@mui/material';
+import { MenuItem, Select, SelectChangeEvent, CircularProgress} from '@mui/material';
 
 const Stock = ({}) => {
     const router = useRouter();
@@ -307,16 +307,16 @@ const Stock = ({}) => {
                      </div>
                 </div>
                 <h1 className="text-xl mt-5 mb-3 font-small">News Data</h1>
-                <p className="text-zinc-600 mb-10">News data for {stock} from {startDate} to {endDate} represented in volume</p>
+                <p className="text-zinc-600 mb-10">News data for {stock} starting from {startDate} to 25 earliest days represented in volume</p>
                 <div className="relative overflow-x-auto">
                     <table className="w-full text-sm text-left text-gray-500">
                         <thead className="text-xs text-gray-700 uppercase bg-gray-50">
                             <tr>
                                 {Object.keys(newsData[0]).map((key, i) => {
                                     console.log(key)
-                                    if (i < 10) {
+                                    if (i < 11 && key != "symbol") {
                                         return (<th scope="col" className="px-6 py-3">
-                                        {key}
+                                        {key.replace("_", " ")}
                                          </th>)
                                     }
                                     
@@ -329,7 +329,7 @@ const Stock = ({}) => {
                                 if (j < 25) {
                                     return (<tr className="bg-white border-b">
                                         {Object.keys(newsData[0]).map((key, i) => {
-                                            if (i < 10) {
+                                            if (i < 11 && key != "symbol") {
                                                 return (
                                                     <td className="px-6 py-4">
                                                         {(data as any)[key]}
