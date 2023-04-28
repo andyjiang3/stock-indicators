@@ -13,6 +13,7 @@ app.use(cors({
 app.get('/stocks', routes.stocks);
 app.get('/news', routes.news);
 app.get('/market', routes.market);
+app.get('/random', routes.random);
 
 //Defined Query Endpoints (in order)
 app.get('/stocks/:symbol', routes.stocksID);
