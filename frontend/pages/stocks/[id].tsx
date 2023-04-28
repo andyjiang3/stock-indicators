@@ -106,20 +106,32 @@ const Stock = ({}) => {
             <div className="p-10 pt-5">
                 <div className="flex justify-start items-baseline flex-col mb-5">
                     <h1 className="text-4xl bold">{stockInfo.symbol}</h1>
-                    <h2 className="text-xl text-zinc-800 mb-10">{stockInfo.security}</h2>
+                    <h2 className="text-xl text-zinc-800">{stockInfo.security}</h2>
                 </div>
 
-
-                <Select labelId="strategy-selector-label" id="strategy-selector" value={strategy.toString()} label="Strategy" onChange={changeStrat}>
-                    <MenuItem value={0}>Select Strategy...</MenuItem>
-                    <MenuItem value={1}>Mean Regression</MenuItem>
-                    <MenuItem value={2}>Other Selection</MenuItem>
-                </Select>
+                <div className="grid grid-cols-8 gap-4 h-28 mb-8">
+                    {Object.keys(stockInfo).map((data) => (
+                        <div className="flex-row bg-white h-full w-full border border-gray-300 justify-center text-center p-1 pt-2 rounded-md">
+                            <div className="text-sm font-bold mb-3">{data.replaceAll("_", " ").split(" ").map((word) => word[0].toUpperCase() + word.substring(1)).join(" ")}</div>
+                            <div className="">{(stockInfo as any)[data]}</div>
+                        </div>
+                    ))}
+                </div>
                 
-                <h1 className="text-xl mt-5 font-small">Stock Price</h1>
-                <div className="w-full flex m-0 justify-center">
-                    <Line className="flex m-0" width={100} height={50} data={graphData} />
+                <div className="flex">
+                    <div className="w-2/3 flex-row m-0 justify-start">
+                        <h1 className="text-xl mt-5 font-small">Stock Price</h1>
+                        <Line className="flex m-0" width={100} height={50} data={graphData} />
+                    </div>
+                    <div className="w-1/3 flex-row m-0 justify-start pl-10">
+                        <h1 className="text-xl mt-5 font-small mb-7">Trading Strategy</h1>
+                        <Select labelId="strategy-selector-label" id="strategy-selector" value={strategy.toString()} label="Strategy" onChange={changeStrat}>
+                            <MenuItem value={0}>No Strategy</MenuItem>
+                            <MenuItem value={1}>Mean Regression</MenuItem>
+                        </Select>
+                    </div>
                 </div>
+               
 
 
 
