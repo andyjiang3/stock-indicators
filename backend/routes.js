@@ -262,6 +262,7 @@ const bollinger = (req, res) => {
   const dateEnd = req.query.end ?? '2022-07-29'; //note: defaults to latest date (07/29/2022)
   const period = req.query.period ?? 20;
   const bollingerSide = req.query.side ?? 0;
+  const multiplier = req.query.multiplier ?? 1;
 
   connection.query(`
   WITH All_Dates AS (
@@ -304,8 +305,9 @@ const bollinger = (req, res) => {
     } else {
       var results = JSON.parse(JSON.stringify(data));
       results = results.map((item) => {
-        var buy = bollingerSide == 0 && item.actual > item.bollinger;
-        var sell = bollingerSide != 0 && item.actual < item.bollinger;
+        var threshold = multiplier * item.bollinger
+        var buy = bollingerSide == 0 && item.actual > threshold;
+        var sell = bollingerSide != 0 && item.actual < threshold;
 
         return { ...item, buy, sell };
       });
@@ -420,6 +422,7 @@ const newsAnalysis = (req, res) => {
   const dateStart = req.query.start ?? '2020-10-01'; //note: defaults to earliest date (10/01/2020)
   const dateEnd = req.query.end ?? '2022-07-29'; //note: defaults to latest date (07/29/2022)
   const id = req.params["symbol"];
+  const multiplier = req.query.multiplier ?? 0.5
 
   connection.query(
     `
@@ -452,7 +455,7 @@ const newsAnalysis = (req, res) => {
       } else {
         var results = JSON.parse(JSON.stringify(data));
         results = results.map((item) => {
-          var adjust = 0.5 * item.std_dev;
+          var adjust = multiplier * item.std_dev;
           var buy = item.news_score > item.avg + adjust;
           var sell = item.news_score + adjust < item.avg; ;
 
