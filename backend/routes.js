@@ -394,7 +394,7 @@ const hotStocks = (req, res) => {
     GROUP BY U.symbol
     ORDER BY upticks DESC
   )
-  SELECT S.* 
+  SELECT S.* , U.upticks as upticks
   FROM Stock S 
        LEFT JOIN upticks_sum U 
               ON S.symbol = U.Symbol 
