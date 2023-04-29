@@ -530,7 +530,7 @@ const rollingMean = (req, res) => {
             ON AI.symbol = AD.symbol
       WHERE AI.date >= DATE_SUB(AD.date, INTERVAL ${period - 1} DAY) AND AI.date <= AD.date
   )
-  SELECT actual, starting_date as date, COUNT(date) AS num_data_points, AVG(close) AS rolling_mean
+  SELECT actual as close, starting_date as date, COUNT(date) AS num_data_points, AVG(close) AS rolling_mean
   FROM Rolling_Data
   GROUP BY starting_date
   `,
@@ -592,7 +592,7 @@ const wieghtedRollingMean = (req, res) => {
         period - 1
       } DAY) AND AI.date <= AD.date
   )
-  SELECT actual, starting_date as date, COUNT(date) AS num_data_points, Sum(value)/Sum(weight) AS rolling_mean
+  SELECT actual as close, starting_date as date, COUNT(date) AS num_data_points, Sum(value)/Sum(weight) AS rolling_mean
   FROM Rolling_Data
   GROUP BY starting_date
   `,
@@ -701,7 +701,7 @@ const expRollingMean = (req, res) => {
           prevPosition = position
 
 
-          return { start_date: item.date, rolling_mean: ema, buy, sell };
+          return { start_date: item.date, rolling_mean: ema, buy, sell, close:ema };
         });
         cache.set(req.url, results);
         res.send(results);
