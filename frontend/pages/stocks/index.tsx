@@ -1,10 +1,22 @@
 import NavBar from "@/components/NavBar"
 import Link from "next/link"
-import { FormEvent, useEffect, useState } from "react"
+import { Dispatch, FormEvent, SetStateAction, useEffect, useState } from "react"
 
 import { Stock } from "../../constants/types"
 
-const StocksHome = () => {
+interface StocksHomeProps {
+    startDate: string,
+    setStartDate: Dispatch<SetStateAction<string>>,
+    endDate: string,
+    setEndDate: Dispatch<SetStateAction<string>>
+}
+
+const StocksHome = ({
+    startDate,
+    setStartDate,
+    endDate,
+    setEndDate
+}: StocksHomeProps) => {
     const [stocks, setStocks] = useState<Stock[] | null>(null);
     const [searchVal, setSearchVal] = useState('');
     const changeSearchVal = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -23,7 +35,7 @@ const StocksHome = () => {
 
     return (
         <div>
-            <NavBar />
+            <NavBar startDate={startDate} setStartDate={setStartDate} endDate={endDate} setEndDate={setEndDate}/>
                 <div className="p-10 pt-0">
                     <form style={{padding: "auto", margin: "auto"}}>
                         <label htmlFor="stockName">Search for a Stock</label>

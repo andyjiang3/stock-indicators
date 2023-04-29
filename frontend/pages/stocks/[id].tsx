@@ -2,18 +2,27 @@ import { useRouter } from 'next/router'
 import NavBar from "@/components/NavBar"
 import { Stock, StockPeriod, RollingMean, Bollinger, StockDayAvg } from "../../constants/types"
 import { DatePicker } from '@mui/x-date-pickers';
-import { useEffect, useRef, useState } from 'react';
+import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
 import { Line } from 'react-chartjs-2'
 import { Chart, CategoryScale, LineElement, LineController, PointElement } from 'chart.js/auto'
 import { MenuItem, Select, SelectChangeEvent, CircularProgress} from '@mui/material';
 
-const Stock = ({}) => {
+interface StockProps {
+    startDate: string,
+    setStartDate: Dispatch<SetStateAction<string>>,
+    endDate: string,
+    setEndDate: Dispatch<SetStateAction<string>>
+}
+const Stock = ({
+    startDate,
+    setStartDate,
+    endDate,
+    setEndDate
+}: StockProps) => {
     const router = useRouter();
     const [strategy, setStrategy] = useState<number>(0);
     const [stockInfo, setStockInfo] = useState<Stock | null>(null);
     const [newsData, setNewsData] = useState(null);
-    const [startDate, setStartDate] = useState("2020-10-20");
-    const [endDate, setEndDate] = useState("2022-07-29");
 
     const [priceData, setPriceData] = useState(null);
     const [graphData, setGraphData] = useState(null);
@@ -23,7 +32,6 @@ const Stock = ({}) => {
 
     const stock = router.query.id;
     const maxDate = "2022-07-29";
-    const initialRender = useRef(true);
 
     useEffect(() => {
         if (stock) {
@@ -260,7 +268,7 @@ const Stock = ({}) => {
 
     return (
         <div>
-            <NavBar />
+            <NavBar startDate={startDate} setStartDate={setStartDate} endDate={endDate} setEndDate={setEndDate}/>
             {!stockInfo || !priceData || !graphData || !newsData ? 
             <div className="flex justify-center">
                 <CircularProgress/>
