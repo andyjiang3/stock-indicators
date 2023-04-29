@@ -237,9 +237,10 @@ const volatility = async function(req, res){
       FROM DayPrices D JOIN Mean M ON D.symbol = M.symbol
       WHERE D.date >= '${dateStart}' AND D.date <= '${dateEnd}'
   )
-  SELECT D2.symbol, SUM(sqrt(D2.difference * D2.difference))/count(*) AS volatility 
-  FROM Differences D2 
-  GROUP BY D2.symbol;
+  SELECT S.security, D2.symbol, SUM(sqrt(D2.difference * D2.difference))/count(*) AS volatility 
+  FROM Differences D2 join Stock S on S.symbol = D2.symbol
+  GROUP BY D2.symbol
+  order by volatility DESC;
   `,
     (err, data) => {
       if (err || data.length === 0) {
