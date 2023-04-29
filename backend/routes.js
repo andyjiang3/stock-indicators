@@ -414,6 +414,57 @@ const hotStocks = (req, res) => {
   );
 }
 
+
+// Route 9: Finds the 10 'hot' stocks for a specified date range
+const newsAnalysis = (req, res) => {
+  const dateStart = req.query.start ?? '2020-10-01'; //note: defaults to earliest date (10/01/2020)
+  const dateEnd = req.query.end ?? '2022-07-29'; //note: defaults to latest date (07/29/2022)
+  const id = req.params["symbol"];
+
+  connection.query(
+    `
+  WITH positive_indicators AS (
+    SELECT symbol, date, ( (N.news_volume /1000 + N.stock_rumors / 2 + N.analysts_comments / 200 ) * (N.news_positive / 200 - N.news_negative / 40 + N.news_stocks / 100 + N.dividends / 20 + N.corporate_earnings / 100 + N.m_and_a / 150 + N.product_recalls / 80)) AS positive_score
+    FROM News N 
+    WHERE N.date >= '${dateStart}' and N.date <= '${dateEnd}'
+    AND N.symbol = '${id}'
+  ), negative_indicators AS (
+    SELECT symbol, date, ( (N.news_volume / 100 + N.stock_rumors / 2 + N.analysts_comments / 200) *(N.adverse_events / 200 + N.personnel_changes / 300)) AS negative_scores
+    FROM News N 
+    WHERE N.date >= '${dateStart}' AND N.date <= '${dateEnd}'
+    AND N.symbol = '${id}'
+  ), news_score AS (
+    SELECT P.symbol, P.date, ((P.positive_score) - (N.negative_scores)) AS news_score
+    FROM positive_indicators P
+         JOIN negative_indicators N 
+           ON P.symbol = N.symbol AND P.date = N.date
+    ORDER BY news_score DESC
+  ), std_dev AS (
+  SELECT STDDEV(N.news_score) as std_dev, avg(N.news_score) as avg
+  FROM news_score N)
+  select *
+  from news_score N, std_dev
+  `,
+    (err, data) => {
+      if (err || data.length == 0) {
+        console.log(err);
+        res.json({});
+      } else {
+        var results = JSON.parse(JSON.stringify(data));
+        results = results.map((item) => {
+          var adjust = 0.5 * item.std_dev;
+          var buy = item.news_score > item.avg + adjust;
+          var sell = item.news_score + adjust < item.avg; ;
+
+          return { ...item, buy, sell };
+        });
+        cache.set(req.url, results);
+        res.send(results);
+      }
+    }
+  );
+}
+
 //SELECT S.*, C.price_change FROM Stock S LEFT JOIN price_changes C ON S.symbol = C.symbol ORDER BY price_change;
 // Route 10: Return a ranking of stocks whose value has changed the most since the last day (for given date range)
 const ranking = (req, res) => {
@@ -682,5 +733,6 @@ module.exports = {
   wieghtedRollingMean,
   expRollingMean,
   specificNews,
+  newsAnalysis,
   middleware
 };
