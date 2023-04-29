@@ -701,7 +701,7 @@ const expRollingMean = (req, res) => {
           prevPosition = position
 
 
-          return { start_date: item.date, rolling_mean: ema, buy, sell, close:ema };
+          return { date: item.date, rolling_mean: ema, buy, sell, close:ema };
         });
         cache.set(req.url, results);
         res.send(results);
