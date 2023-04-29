@@ -445,8 +445,8 @@ const newsAnalysis = (req, res) => {
   ), std_dev AS (
   SELECT STDDEV(N.news_score) as std_dev, avg(N.news_score) as avg
   FROM news_score N)
-  select *
-  from news_score N, std_dev
+  select N.*, S.*, M.close
+  from news_score N join Market M on M.symbol = N.symbol and M.date = N.date, std_dev S
   `,
     (err, data) => {
       if (err || data.length == 0) {
