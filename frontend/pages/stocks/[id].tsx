@@ -3,9 +3,17 @@ import NavBar from "@/components/NavBar"
 import { Stock, StockPeriod, RollingMean, Bollinger, StockDayAvg } from "../../constants/types"
 import { DatePicker } from '@mui/x-date-pickers';
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
-import { Line } from 'react-chartjs-2'
-import { Chart, CategoryScale, LineElement, LineController, PointElement } from 'chart.js/auto'
+import { Line, Chart } from 'react-chartjs-2'
+import { Chart as ChartJS, CategoryScale, LineElement, LineController, PointElement } from 'chart.js/auto'
 import { MenuItem, Select, SelectChangeEvent, CircularProgress} from '@mui/material';
+import { start } from 'repl';
+
+
+const days_between = (date1: any, date2: any) => {
+    const dt1 = new Date(date1);
+    const dt2 = new Date(date2);
+    return Math.floor((Date.UTC(dt2.getFullYear(), dt2.getMonth(), dt2.getDate()) - Date.UTC(dt1.getFullYear(), dt1.getMonth(), dt1.getDate()) ) /(1000 * 60 * 60 * 24));
+}
 
 interface StockProps {
     startDate: string,
@@ -28,10 +36,9 @@ const Stock = ({
     const [graphData, setGraphData] = useState(null);
     const [period, setPeriod] = useState(20);
     const [isCalcStrat, setIsCalcStrat] = useState(false);
-    
+    const [buySellGraphData, setBuySellGraphData] = useState(null);
 
     const stock = router.query.id;
-    const maxDate = "2022-07-29";
 
     useEffect(() => {
         if (stock) {
@@ -102,6 +109,7 @@ const Stock = ({
         newGraphData['datasets'].push(graphPriceData);
 
         setGraphData(newGraphData);
+        setBuySellGraphData(null);
     }
 
     const calcMeanReversionGraph = async () => {
@@ -127,10 +135,15 @@ const Stock = ({
             })
         );
 
-        console.log("upper");
-        console.log(upperBollinger);
-        console.log("mean");
-        console.log(rollingMean);
+        const newGraphData: any = {
+            labels: null,
+            datasets: []
+        }
+
+        const newBuySellGraphData: any = {
+            labels: null,
+            datasets: []
+        }
 
         const rollingMeanData = {
             label: '20 ma',
@@ -198,10 +211,6 @@ const Stock = ({
             data: (lowerBollinger as any).map((b : Bollinger) => b.bollinger)
         }
 
-        const newGraphData: any = {
-            labels: null,
-            datasets: []
-        }
         const graphPriceData = {
             label: 'Close',
             fill: false,
@@ -223,13 +232,53 @@ const Stock = ({
             pointHitRadius: 10,
             data: (priceData as any).map((d : any) => d.close)
         }
+
+        const sellSignals = {
+            label: 'Sell',
+            fill: false,
+            borderColor: "#EC932F",
+            backgroundColor: "#212F3D",
+            pointBorderColor: "#B2BABB",
+            pointBackgroundColor: "#D4AC0D",
+            pointHoverBackgroundColor: "#D4AC0D",
+            pointHoverBorderColor: "black",
+            borderCapStyle: "butt",
+            borderDash: [],
+            borderDashOffset: 0.0,
+            pointBorderWidth: 1,
+            pointHoverRadius: 5,
+            pointHoverBorderWidth: 2,
+            pointRadius: 5,
+            pointHitRadius: 10,
+            data: (lowerBollinger as any).filter((d: any) => d.sell).map((d : any) => {
+                if (d.sell) {
+                    return {x: (new Date(d.date)).toISOString().slice(0, 10), y: (priceData as any).map((d : any) => d.close)[days_between(startDate, d.date) - 2]}
+                }
+            })
+        }
+
+
+        
+        console.log("right after");
+        console.log((lowerBollinger as any).filter((d: any) => d.sell).map((d : any) => {
+            if (d.sell) {
+                return {x: (new Date(d.date)).toISOString().slice(0, 10), y: (priceData as any).map((d : any) => d.close)[days_between(startDate, d.date) - 2]}
+            }
+        }))
+        console.log((lowerBollinger as any).map((b : Bollinger) => b.bollinger))
+
         newGraphData['labels'] = (priceData as any).map((d: any) => d.date);
         newGraphData['datasets'].push(graphPriceData);
         (newGraphData['datasets'] as any).push(rollingMeanData);
         (newGraphData['datasets'] as any).push(upperBollingerData);
         (newGraphData['datasets'] as any).push(lowerBollingerData);
         setGraphData(newGraphData);
-        console.log(newGraphData);
+
+        newBuySellGraphData['labels'] = (priceData as any).map((d: any) => d.date);
+        newBuySellGraphData['datasets'].push(graphPriceData);
+        (newBuySellGraphData['datasets'] as any).push(sellSignals);
+
+        setBuySellGraphData(newBuySellGraphData);
     }
 
     const calcStrategy = (strategyNumber: number):void => {
@@ -264,7 +313,7 @@ const Stock = ({
         }
     }
 
-    Chart.register(CategoryScale, LineElement, LineController, PointElement);
+    ChartJS.register(CategoryScale, LineElement, LineController, PointElement);
 
     return (
         <div>
@@ -294,7 +343,13 @@ const Stock = ({
                 <div className="flex">
                     <div className="w-2/3 flex-row m-0 justify-start">
                         <h1 className="text-xl mt-5 font-small">Stock Price</h1>
-                        <Line className="flex m-0" width={100} height={50} data={graphData} />
+                        <Line className="flex m-0 h-full" width={100} height={50} data={graphData} />
+                        {buySellGraphData && 
+                        <>
+                          <h1 className="text-xl mt-5 font-small">Buy / Sell Times</h1>
+                        <Chart className="flex m-0 h-full" width={100} height={50} type="line" data={buySellGraphData} />
+                        </>
+                        }
                     </div>
                     <div className="w-1/3 flex-row m-0 justify-start pl-10">
                         <h1 className="text-xl mt-5 font-small mb-7">Trading Strategy</h1>
