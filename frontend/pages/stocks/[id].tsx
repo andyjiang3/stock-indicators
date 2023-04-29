@@ -681,9 +681,7 @@ const Stock = ({
     }
 
     ChartJS.register(CategoryScale, LineElement, LineController, PointElement);
-    console.log(process.env.url_prefix);
-    console.log(url_prefix);
-    
+
     return (
         <div>
             <NavBar startDate={startDate} setStartDate={setStartDate} endDate={endDate} setEndDate={setEndDate}/>

@@ -35,7 +35,7 @@ const NavBar = ({
             )
         }
     }, [])
-    console.log(startDate)
+
     return (
     <div className="bg-white flex p-3 justify-start align-center shadow-sm mb-5 items-center">
         <div className="flex-1">

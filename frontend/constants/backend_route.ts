@@ -1,1 +1,1 @@
-export const url_prefix = process.env.url_prefix ?? "http://localhost:8080";  
+export const url_prefix = process.env.NEXT_PUBLIC_URL_PREFIX ?? "http://localhost:8080";  
