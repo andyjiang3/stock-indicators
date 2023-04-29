@@ -309,7 +309,7 @@ const bollinger = (req, res) => {
         var buy = bollingerSide == 0 && item.actual > threshold;
         var sell = bollingerSide != 0 && item.actual < threshold;
 
-        return { ...item, buy, sell };
+        return { ...item, buy, sell, close: item.actual };
       });
       cache.set(req.url, results);
       res.send(results);
