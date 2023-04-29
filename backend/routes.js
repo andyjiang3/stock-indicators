@@ -42,6 +42,10 @@ const news = async function(req, res) {
   } else {
     var results = JSON.parse(JSON.stringify(data));
     cache.set(req.url, results);
+    if (results == null)
+    {
+      res.JSON({})
+    }
     res.send(results);  
   }
 });
@@ -186,6 +190,9 @@ const stockAvgRange = async function(req, res) {
     } else {
       var results = JSON.parse(JSON.stringify(data));
       cache.set(req.url, results);
+      if (results == null) {
+        res.JSON([]);
+      }
       res.send(results);  
     }
   });
