@@ -42,7 +42,7 @@ const NavBar = ({
         </div>
         <div className="flex relative justify-center align-middle w-2/3">
            
-                <div className="inline-block w-4/6">
+                <div className="inline-block self-center w-4/6">
                     <input className="w-full p-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Search for stock by symbol or security name" value={searchVal} onChange={changeSearchVal}></input>
                 </div>
                 {searchVal.length > 0 && 
@@ -59,7 +59,7 @@ const NavBar = ({
                 }
                 {startDate && startDate.length > 0 && endDate && endDate.length > 0 &&
                 <>
-                    <div className="ml-3 w-1/6 inline-block">
+                    <div className="ml-3 max-h-8 w-1/6 inline-block">
                         <DatePicker className="w-full" label="Start Date" minDate={dayjs(minDate)} maxDate={dayjs(maxDate)} defaultValue={dayjs(startDate)} onChange={(newValue: any) => setStartDate(newValue.format('YYYY-MM-DD'))}></DatePicker>
                     </div>
                     <div className="ml-3 w-1/6 inline-block">
