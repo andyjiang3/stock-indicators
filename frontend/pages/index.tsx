@@ -4,6 +4,7 @@ import { Stock } from '@/constants/types'
 import { CircularProgress } from '@mui/material';
 import Link from "next/link"
 import dayjs from 'dayjs';
+import { url_prefix } from '@/constants/backend_route';
 
 
 interface HomeProps {
@@ -26,7 +27,7 @@ const Home = ({
   const [mostVolatile, setMostVolatile] = useState(null);
 
   const getRandomStock = () => {
-    fetch(`http://localhost:8080/random`).then((res) => 
+    fetch(`${url_prefix}/random`).then((res) => 
         res.json().then((resJson: Stock) => {
           setRandomStock(resJson);
         })
@@ -37,19 +38,19 @@ const Home = ({
     getRandomStock();
     
 
-    fetch(`http://localhost:8080/hotStocks?start=${startDate}&end=${endDate}`).then((res) => 
+    fetch(`${url_prefix}/hotStocks?start=${startDate}&end=${endDate}`).then((res) => 
       res.json().then((resJson) => {
         setHotStocks(resJson);
       })
     );
 
-    fetch(`http://localhost:8080/ranking?start=${startDate}&end=${endDate}`).then((res) => 
+    fetch(`${url_prefix}/ranking?start=${startDate}&end=${endDate}`).then((res) => 
       res.json().then((resJson) => {
         setTopMovers(resJson);
       })
     );
 
-    fetch(`http://localhost:8080/volatility?start=${startDate}&end=${endDate}`).then((res) => 
+    fetch(`${url_prefix}/volatility?start=${startDate}&end=${endDate}`).then((res) => 
       res.json().then((resJson) => {
         setMostVolatile(resJson);
       })

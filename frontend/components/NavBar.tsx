@@ -3,6 +3,7 @@ import { Stock } from '../constants/types'
 import Link from "next/link"
 import { DatePicker } from '@mui/x-date-pickers';
 import dayjs from 'dayjs';
+import { url_prefix } from '@/constants/backend_route';
 
 interface NavBarProps {
     startDate: string,
@@ -27,7 +28,7 @@ const NavBar = ({
 
     useEffect(() => {
         if (!stocks) {
-            fetch(`http://localhost:8080/stocks`).then((res) => 
+            fetch(`${url_prefix}/stocks`).then((res) => 
                 res.json().then((resJson: Stock[]) => {
                     setStocks(resJson);
                 })

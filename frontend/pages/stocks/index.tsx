@@ -1,8 +1,9 @@
 import NavBar from "@/components/NavBar"
 import Link from "next/link"
-import { Dispatch, FormEvent, SetStateAction, useEffect, useState } from "react"
+import { Dispatch, SetStateAction, useEffect, useState } from "react"
 
 import { Stock } from "../../constants/types"
+import { url_prefix } from '@/constants/backend_route';
 
 interface StocksHomeProps {
     startDate: string,
@@ -25,7 +26,7 @@ const StocksHome = ({
 
     useEffect(() => {
         if (!stocks) {
-            fetch(`http://localhost:8080/stocks`).then((res) => 
+            fetch(`${url_prefix}/stocks`).then((res) => 
                 res.json().then((resJson: Stock[]) => {
                     setStocks(resJson);
                 })

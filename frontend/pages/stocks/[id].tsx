@@ -5,7 +5,7 @@ import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { Line, Chart } from 'react-chartjs-2'
 import { Chart as ChartJS, CategoryScale, LineElement, LineController, PointElement } from 'chart.js/auto'
 import { MenuItem, Select, SelectChangeEvent, CircularProgress} from '@mui/material';
-import { format } from 'path';
+import { url_prefix } from '@/constants/backend_route';
 
 interface StockProps {
     startDate: string,
@@ -45,14 +45,14 @@ const Stock = ({
     useEffect(() => {
         if (stock) {
             setNoData(false);
-            
-            fetch(`http://localhost:8080/stocks/${stock}`).then((res) => 
+
+            fetch(`${url_prefix}/stocks/${stock}`).then((res) => 
                 res.json().then((resJson: Stock) => {
                     setStockInfo(resJson);
                 })
             );
 
-            fetch(`http://localhost:8080/stockAvgRange/${stock}?start=${startDate}&end=${endDate}`).then((res) => 
+            fetch(`${url_prefix}/stockAvgRange/${stock}?start=${startDate}&end=${endDate}`).then((res) => 
                 res.json().then((resJson) => {
                     if (!resJson || resJson.length == 0) {
                         setNoData(true);
@@ -62,7 +62,7 @@ const Stock = ({
                 })
             );  
 
-            fetch(`http://localhost:8080/news/${stock}?start=${startDate}&end=${endDate}`).then((res) => 
+            fetch(`${url_prefix}/news/${stock}?start=${startDate}&end=${endDate}`).then((res) => 
                 res.json().then((resJson) => {
                     if (!resJson || resJson.length == 0) {
                         setNoData(true);
@@ -74,7 +74,7 @@ const Stock = ({
                 })
             );  
         } 
-    }, [stock])
+    }, [stock, startDate, endDate])
 
     useEffect(() => {
         // generate initial price graph
@@ -129,19 +129,19 @@ const Stock = ({
             return;
         }
 
-        const rollingMean = await fetch(`http://localhost:8080/rollingMean/${stock}?start=${startDate}&end=${endDate}&period=${period}`).then((res) => 
+        const rollingMean = await fetch(`${url_prefix}/rollingMean/${stock}?start=${startDate}&end=${endDate}&period=${period}`).then((res) => 
             res.json().then((resJson) => {
                 return resJson
             })
         );  
 
-        const upperBollinger = await fetch(`http://localhost:8080/bollinger/${stock}?start=${startDate}&end=${endDate}&period=${period}&side=0&multiplier=${1 - meanMultipler}`).then((res) => 
+        const upperBollinger = await fetch(`${url_prefix}/bollinger/${stock}?start=${startDate}&end=${endDate}&period=${period}&side=0&multiplier=${1 - meanMultipler}`).then((res) => 
             res.json().then((resJson) => {
                 return resJson
             })
         ); 
 
-        const lowerBollinger = await fetch(`http://localhost:8080/bollinger/${stock}?start=${startDate}&end=${endDate}&period=${period}&side=1&multiplier=${1 + meanMultipler}`).then((res) => 
+        const lowerBollinger = await fetch(`${url_prefix}/bollinger/${stock}?start=${startDate}&end=${endDate}&period=${period}&side=1&multiplier=${1 + meanMultipler}`).then((res) => 
             res.json().then((resJson) => {
                 return resJson
             })
@@ -319,21 +319,21 @@ const Stock = ({
 
         switch (averagingMethod) {
             case 0:
-                meanData = await fetch(`http://localhost:8080/rollingMean/${stock}?start=${startDate}&end=${endDate}&period=${period}`).then((res) => 
+                meanData = await fetch(`${url_prefix}/rollingMean/${stock}?start=${startDate}&end=${endDate}&period=${period}`).then((res) => 
                 res.json().then((resJson) => {
                     return resJson
                 })
             );  
             break;
             case 1:
-                meanData = await fetch(`http://localhost:8080/weightedRollingMean/${stock}?start=${startDate}&end=${endDate}&period=${period}`).then((res) => 
+                meanData = await fetch(`${url_prefix}/weightedRollingMean/${stock}?start=${startDate}&end=${endDate}&period=${period}`).then((res) => 
                 res.json().then((resJson) => {
                     return resJson
                 })
             );  
             break;
             case 2:
-                meanData = await fetch(`http://localhost:8080/expRollingMean/${stock}?start=${startDate}&end=${endDate}&period=${period}&smoothing=${expSmoothing}`).then((res) => 
+                meanData = await fetch(`${url_prefix}/expRollingMean/${stock}?start=${startDate}&end=${endDate}&period=${period}&smoothing=${expSmoothing}`).then((res) => 
                 res.json().then((resJson) => {
                     return resJson
                 })
@@ -465,7 +465,7 @@ const Stock = ({
             return;
         }
 
-        const newsScore = await fetch(`http://localhost:8080/newsAnalysis/${stock}?start=${startDate}&end=${endDate}&period=${period}&multiplier=${newsMultiplier}`).then((res) => 
+        const newsScore = await fetch(`${url_prefix}/newsAnalysis/${stock}?start=${startDate}&end=${endDate}&period=${period}&multiplier=${newsMultiplier}`).then((res) => 
             res.json().then((resJson) => {
                 return resJson
             })
