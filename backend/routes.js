@@ -266,7 +266,7 @@ const bollinger = (req, res) => {
 
   connection.query(`
   WITH All_Dates AS (
-    SELECT DISTINCT M.symbol, M.date
+    SELECT DISTINCT M.symbol, M.date, M.close
     FROM Market M
     WHERE M.date >= '${dateStart}' AND M.date <= '${dateEnd}'
     AND M.symbol = '${id}'
@@ -278,14 +278,14 @@ const bollinger = (req, res) => {
       AND M.symbol = '${id}'
   ),
   Rolling_Data AS (
-      SELECT DISTINCT AI.*, AD.date AS starting_date
+      SELECT DISTINCT AI.*, AD.date AS starting_date, AD.close as actual
       FROM All_Dates AD
           JOIN All_Info AI
             ON AI.symbol = AD.symbol
       WHERE AI.date >= DATE_SUB(AD.date, INTERVAL ${period - 1} DAY) AND AI.date <= AD.date
   ),
   Rolling_Mean AS (
-      SELECT starting_date as date, COUNT(date) AS num_data_points, AVG(close) AS rolling_mean, close as actual
+      SELECT starting_date as date, COUNT(date) AS num_data_points, AVG(close) AS rolling_mean, actual
       FROM Rolling_Data
       GROUP BY starting_date
   ),
