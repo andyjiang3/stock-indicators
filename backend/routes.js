@@ -544,9 +544,9 @@ const rollingMean = (req, res) => {
         var results = JSON.parse(JSON.stringify(data));
         results = results.map((item) => {
           var rolling_mean = item.rolling_mean;
-          var buy = switched && item.actual < rolling_mean;
-          var sell = switched && item.actual > rolling_mean;
-          position = item.actual < rolling_mean;
+          var buy = switched && item.close < rolling_mean;
+          var sell = switched && item.close > rolling_mean;
+          position = item.close < rolling_mean;
           switched = position != prevPosition;
           prevPosition = position;
 
@@ -606,9 +606,9 @@ const wieghtedRollingMean = (req, res) => {
         var results = JSON.parse(JSON.stringify(data));
         results = results.map((item) => {
           var rolling_mean = item.rolling_mean;
-          var buy = switched && item.actual < rolling_mean;
-          var sell = switched && item.actual > rolling_mean;
-          position = item.actual < rolling_mean;
+          var buy = switched && item.close < rolling_mean;
+          var sell = switched && item.close > rolling_mean;
+          position = item.close < rolling_mean;
           switched = position != prevPosition;
           prevPosition = position;
 
