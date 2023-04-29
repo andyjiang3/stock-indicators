@@ -5,6 +5,7 @@ import { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { Line, Chart } from 'react-chartjs-2'
 import { Chart as ChartJS, CategoryScale, LineElement, LineController, PointElement } from 'chart.js/auto'
 import { MenuItem, Select, SelectChangeEvent, CircularProgress} from '@mui/material';
+import { format } from 'path';
 
 interface StockProps {
     startDate: string,
@@ -33,6 +34,11 @@ const Stock = ({
     const [meanMultipler, setMeanMultipler] = useState(0); // mean reversion
     const [averagingMethod, setAveragingMethod] = useState<number>(0); // momentum
     const [expSmoothing, setExpSmoothing] = useState<number>(2) // momentum
+    const [newsMultiplier, setNewsMultiplier] = useState<number>(0.5) // news analysis
+
+    const [newsShowMore, setNewsShowMore] = useState(false) // Show all news data
+
+    const [noData, setNoData] = useState(false);
 
     const stock = router.query.id;
 
@@ -46,13 +52,20 @@ const Stock = ({
 
             fetch(`http://localhost:8080/stockAvgRange/${stock}?start=${startDate}&end=${endDate}`).then((res) => 
                 res.json().then((resJson) => {
-                    const formattedData = resJson.map((c : StockDayAvg) => formatDates(c));
+                    if (!resJson || resJson.length == 0) {
+                        setNoData(true);
+                    }
+                    const formattedData = resJson.map((c : any) => formatDates(c));
                     setPriceData(formattedData);
                 })
             );  
 
             fetch(`http://localhost:8080/news/${stock}?start=${startDate}&end=${endDate}`).then((res) => 
                 res.json().then((resJson) => {
+                    if (resJson.length == 0) {
+                        return <div>The requested stock does not have data for the given range.</div>
+                    }
+                    console.log(resJson);
                     const formattedData = resJson.map((c: any) => formatDates(c));
                     setNewsData(formattedData);
                 })
@@ -336,7 +349,7 @@ const Stock = ({
         }
 
         const rollingMeanData = {
-            label: '20 ma',
+            label: 'Rolling Mean',
             fill: false,
             lineTension: 0.1,
             backgroundColor: 'rgba(255,171,0,0.4)',
@@ -354,7 +367,9 @@ const Stock = ({
             pointHoverBorderWidth: 2,
             pointRadius: 1,
             pointHitRadius: 10,
-            data: (meanData as any).map((rolling: any) => rolling.rolling_mean)
+            data: (meanData as any).map((d : any) => {
+                return {x: (new Date(d.date)).toISOString().slice(0, 10), y: d.rolling_mean}
+            })
         }
 
         const graphPriceData = {
@@ -429,15 +444,138 @@ const Stock = ({
             })
         }
 
-        console.log((meanData as any).filter((d: any) => d.sell).map((d : any) => {
-            if (d.sell) {
-                return {x: (new Date(d.date)).toISOString().slice(0, 10), y: d.close}
-            }
-        }))
-
         newGraphData['labels'] = (priceData as any).map((d: any) => d.date);
         newGraphData['datasets'].push(graphPriceData);
         (newGraphData['datasets'] as any).push(rollingMeanData);
+        setGraphData(newGraphData);
+
+        newBuySellGraphData['labels'] = (priceData as any).map((d: any) => d.date);
+        newBuySellGraphData['datasets'].push(graphPriceData);
+        (newBuySellGraphData['datasets'] as any).push(sellSignals);
+        (newBuySellGraphData['datasets'] as any).push(buySignals);
+
+        setBuySellGraphData(newBuySellGraphData);
+    }
+
+    const calcNewsAnalysis = async () => {
+        if (!graphData || !priceData) {
+            return;
+        }
+
+        const newsScore = await fetch(`http://localhost:8080/newsAnalysis/${stock}?start=${startDate}&end=${endDate}&period=${period}&multiplier=${newsMultiplier}`).then((res) => 
+            res.json().then((resJson) => {
+                return resJson
+            })
+        );  
+
+        const newGraphData: any = {
+            labels: null,
+            datasets: []
+        }
+
+        const newBuySellGraphData: any = {
+            labels: null,
+            datasets: []
+        }
+
+        const graphNewsScoreData = {
+            label: 'News Score',
+            fill: false,
+            lineTension: 0.1,
+            backgroundColor: 'rgba(0,125,255,0.4)',
+            borderColor: 'rgba(0,125,255,1)',
+            borderCapStyle: 'butt',
+            borderDash: [],
+            borderDashOffset: 0.0,
+            borderJoinStyle: 'miter',
+            pointBorderColor: 'rgba(0,125,255,1)',
+            pointBackgroundColor: '#fff',
+            pointBorderWidth: 1,
+            pointHoverRadius: 5,
+            pointHoverBackgroundColor: 'rgba(0,125,255,1)',
+            pointHoverBorderColor: 'rgba(220,220,220,1)',
+            pointHoverBorderWidth: 2,
+            pointRadius: 1,
+            pointHitRadius: 10,
+            data: (newsScore as any).map((d : any) => {
+                return {x: (new Date(d.date)).toISOString().slice(0, 10), y: d.news_score}
+            })
+        }
+
+        const graphPriceData = {
+            label: 'Close',
+            fill: false,
+            lineTension: 0.1,
+            backgroundColor: 'rgba(0,125,255,0.4)',
+            borderColor: 'rgba(0,125,255,1)',
+            borderCapStyle: 'butt',
+            borderDash: [],
+            borderDashOffset: 0.0,
+            borderJoinStyle: 'miter',
+            pointBorderColor: 'rgba(0,125,255,1)',
+            pointBackgroundColor: '#fff',
+            pointBorderWidth: 1,
+            pointHoverRadius: 5,
+            pointHoverBackgroundColor: 'rgba(0,125,255,1)',
+            pointHoverBorderColor: 'rgba(220,220,220,1)',
+            pointHoverBorderWidth: 2,
+            pointRadius: 1,
+            pointHitRadius: 10,
+            data: (newsScore as any).map((d : any) => {
+                return {x: (new Date(d.date)).toISOString().slice(0, 10), y: d.close}
+            })
+        }
+
+        const sellSignals = {
+            label: 'Sell',
+            fill: false,
+            borderColor: "#ffffff",
+            backgroundColor: "#ffffff",
+            pointBorderColor: "#9c222c",
+            pointBackgroundColor: "#c23642",
+            pointHoverBackgroundColor: "#D4AC0D",
+            pointHoverBorderColor: "black",
+            borderCapStyle: "butt",
+            borderDash: [],
+            borderDashOffset: 0.0,
+            pointBorderWidth: 1,
+            pointHoverRadius: 5,
+            pointHoverBorderWidth: 2,
+            pointRadius: 5,
+            pointHitRadius: 10,
+            data: (newsScore as any).filter((d: any) => d.sell).map((d : any) => {
+                if (d.sell) {
+                    return {x: (new Date(d.date)).toISOString().slice(0, 10), y: d.close}
+                }
+            })
+        }
+
+        const buySignals = {
+            label: 'Buy',
+            fill: false,
+            borderColor: "#ffffff",
+            backgroundColor: "#ffffff",
+            pointBorderColor: "#1a7034",
+            pointBackgroundColor: "#229c47",
+            pointHoverBackgroundColor: "#D4AC0D",
+            pointHoverBorderColor: "black",
+            borderCapStyle: "butt",
+            borderDash: [],
+            borderDashOffset: 0.0,
+            pointBorderWidth: 1,
+            pointHoverRadius: 5,
+            pointHoverBorderWidth: 2,
+            pointRadius: 5,
+            pointHitRadius: 10,
+            data: (newsScore as any).filter((d: any) => d.buy).map((d : any) => {
+                if (d.buy) {
+                    return {x: (new Date(d.date)).toISOString().slice(0, 10), y: d.close}
+                }
+            })
+        }
+
+        newGraphData['labels'] = (priceData as any).map((d: any) => d.date);
+        newGraphData['datasets'].push(graphNewsScoreData);
         setGraphData(newGraphData);
 
         newBuySellGraphData['labels'] = (priceData as any).map((d: any) => d.date);
@@ -459,6 +597,9 @@ const Stock = ({
                 break;
             case 2:
                 calcMomentum();
+                break;
+            case 3:
+                calcNewsAnalysis();
                 break;
         }
         setIsCalcStrat(false);
@@ -504,19 +645,33 @@ const Stock = ({
                             <MenuItem value={2}>Exponential Moving Average</MenuItem>
                         </Select>
                     </div>
-                    <p className="text-zinc-600 mb-10">Each averaging method have its benefits and trade-offs, <u>method should be decided based on the volatility, stock sentiment, market trend, etc of the stock. </u>For example, EMA would be a good choice for stocks with high volatility.</p>
-
-                    {
-                        averagingMethod == 2 && 
+                    <p className="text-zinc-600 mb-3">Each averaging method have its benefits and trade-offs, <u>method should be decided based on the volatility, stock sentiment, market trend, etc of the stock. </u>For example, EMA would be a good choice for stocks with high volatility.</p>
+                    {averagingMethod == 2 && 
                         <>
                         <div className="mb-3">
                             <h1 className="inline-block text-l mt-5 font-small mb-2 mr-5">Exponential Smoothing</h1>
                             <input className="inline-block p-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Period Number" onChange={(event: React.ChangeEvent<HTMLInputElement>) => setExpSmoothing(parseFloat(event.target.value))} defaultValue={expSmoothing}></input>
                         </div>
-                        <p className="text-zinc-600 mb-10">Whereas in Moving Averages the past observations are weighted equally, exponential smoothing assigns exponentially decreasing weights as the observation get older. <u>Recent observations are given relatively more weight in forecasting than the older observations.</u></p>
+                        <p className="text-zinc-600 mb-10">Whereas in Moving Averages the past observations are weighted equally, exponential smoothing assigns exponentially decreasing weights as the observation get older. <u>Higher smoothing means recent observations are given relatively more weight in forecasting than the older observations.</u></p>
                         </>
                     }
                     
+                </>
+            case 3:
+                return <>
+                    <h1 className="text-l font-medium mb-2">How it works</h1>
+                    <div className="mb-5">Mean-reversion strategies work on the assumption that there is an underlying stable trend in the price of an asset and prices fluctuate randomly around this trend . Therefore, values deviating far from the trend will tend to reverse direction and revert back to the trend.</div>
+                    <h1 className="text-l mt-5 font-medium mb-2">Options</h1>
+                    <div className="mb-2">
+                        <h1 className="inline-block text-l mt-5 font-small mb-2 mr-5">Period</h1>
+                        <input className="inline-block p-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Period Number" onChange={(event: React.ChangeEvent<HTMLInputElement>) => setPeriod(parseFloat(event.target.value))} defaultValue={period}></input>
+                    </div>
+                    <p className="text-zinc-600 mb-3">For each date, this specifies a window of days to extract data from. <u>Higher period would therefore lead to more generalized aggregations.</u></p>
+                    <div className="mb-2">
+                        <h1 className="inline-block text-l mt-5 font-small mb-2 mr-5">Indicator News STD</h1>
+                        <input className="inline-block p-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Period Number" onChange={(event: React.ChangeEvent<HTMLInputElement>) => setNewsMultiplier(parseFloat(event.target.value))} defaultValue={newsMultiplier}></input>
+                    </div>
+                    <p className="text-zinc-600 mb-10">Specifies how many standard deviation above the average news sentiment until buy or sell indicator is signaled. <u>Higher standard deviation means less relaxed, news sentiment for given day need to be needs to be x std above average.</u></p>
                 </>
                 
         }
@@ -551,7 +706,7 @@ const Stock = ({
                 
                 <div className="flex">
                     <div className="w-2/3 flex-row m-0 justify-start">
-                        <h1 className="text-xl mt-5 font-small">Stock Price</h1>
+                        <h1 className="text-xl mt-5 font-small">{strategy == 3 ? "News Score" : "Stock Price"}</h1>
                         <Line className="flex m-0 h-full" width={100} height={50} data={graphData} />
                         {buySellGraphData && 
                         <>
@@ -571,6 +726,7 @@ const Stock = ({
                                     <MenuItem value={0}>No Strategy</MenuItem>
                                     <MenuItem value={1}>Mean Reversion</MenuItem>
                                     <MenuItem value={2}>Momentum</MenuItem>
+                                    <MenuItem value={3}>News Analysis</MenuItem>
                                 </Select>
                             </div>
                             {renderTradingOptions(strategy)}
@@ -580,7 +736,9 @@ const Stock = ({
                      </div>
                 </div>
                 <h1 className="text-xl mt-5 mb-3 font-small">News Data</h1>
-                <p className="text-zinc-600 mb-10">News data for {stock} starting from {startDate} to 25 earliest days represented in volume</p>
+                <p className="text-zinc-600 mb-3">News data for {stock} starting from {startDate} to {endDate} represented in volume</p>
+                <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-10" onClick={() => setNewsShowMore(!newsShowMore)}>Show {newsShowMore ?  "less" : "all"} data</button>
+   
                 <div className="relative overflow-x-auto">
                     <table className="w-full text-sm text-left text-gray-500">
                         <thead className="text-xs text-gray-700 uppercase bg-gray-50">
@@ -598,7 +756,7 @@ const Stock = ({
                         </thead>
                         <tbody>
                             {(newsData as any).map((data: any, j: any) => {
-                                if (j < 25) {
+                                if (j < 25 || newsShowMore) {
                                     return (<tr className="bg-white border-b">
                                         {Object.keys(newsData[0]).map((key, i) => {
                                             if (i < 11 && key != "symbol") {
@@ -617,6 +775,7 @@ const Stock = ({
                         </tbody>
                     </table>
                 </div>
+
             </div>
             
             }
