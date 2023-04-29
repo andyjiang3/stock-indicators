@@ -44,6 +44,8 @@ const Stock = ({
 
     useEffect(() => {
         if (stock) {
+            setNoData(false);
+            
             fetch(`http://localhost:8080/stocks/${stock}`).then((res) => 
                 res.json().then((resJson: Stock) => {
                     setStockInfo(resJson);
@@ -62,9 +64,10 @@ const Stock = ({
 
             fetch(`http://localhost:8080/news/${stock}?start=${startDate}&end=${endDate}`).then((res) => 
                 res.json().then((resJson) => {
-                    if (resJson.length == 0) {
-                        return <div>The requested stock does not have data for the given range.</div>
+                    if (!resJson || resJson.length == 0) {
+                        setNoData(true);
                     }
+
                     console.log(resJson);
                     const formattedData = resJson.map((c: any) => formatDates(c));
                     setNewsData(formattedData);
@@ -707,10 +710,11 @@ const Stock = ({
                 <div className="flex">
                     <div className="w-2/3 flex-row m-0 justify-start">
                         <h1 className="text-xl mt-5 font-small">{strategy == 3 ? "News Score" : "Stock Price"}</h1>
+                        {noData && <h1 className="text-l bold text-red-600">No market data for given date range</h1>}
                         <Line className="flex m-0 h-full" width={100} height={50} data={graphData} />
                         {buySellGraphData && 
                         <>
-                          <h1 className="text-xl mt-5 font-small">Buy / Sell Times</h1>
+                          <h1 className="text-xl mt-5 font-small">Buy / Sell Indicators</h1>
                         <Chart className="flex m-0 h-full" width={100} height={50} type="line" data={buySellGraphData} />
                         </>
                         }
@@ -730,7 +734,7 @@ const Stock = ({
                                 </Select>
                             </div>
                             {renderTradingOptions(strategy)}
-                            <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onClick={() => calcStrategy(strategy)}>Generate</button>
+                            {!noData && <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onClick={() => calcStrategy(strategy)}>Generate</button>}
                             </>
                         }
                      </div>
