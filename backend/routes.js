@@ -1,6 +1,9 @@
 const mysql = require('mysql')
 const config = require('./config.json')
 
+var cache = new Map();
+
+
 // Creates MySQL connection using database credential provided in config.json
 // Do not edit. If the connection fails, make sure to check that config.json is filled out correctly
 const connection = mysql.createConnection({
@@ -37,7 +40,9 @@ const news = async function(req, res) {
     console.log(err);
     res.json({});
   } else {
-    res.json(data);
+    var results = JSON.parse(JSON.stringify(data));
+    cache.set(req.url, results);
+    res.send(results);  
   }
 });
 }
@@ -74,7 +79,9 @@ const market = async function(req, res) {
     console.log(err);
     res.json({});
   } else {
-    res.json(data);
+    var results = JSON.parse(JSON.stringify(data));
+    cache.set(req.url, results);
+    res.send(results);  
   }
 });
 }
@@ -89,7 +96,8 @@ const random = async function(req, res) {
       console.log(err);
       res.json({});
     } else {
-      res.json(data[0]);
+      var results = JSON.parse(JSON.stringify(data))[0];
+      res.send(results);  
     }
   });
 }
@@ -106,7 +114,9 @@ const stocksID = async function(req, res) {
       console.log(err);
       res.json({});
     } else {
-      res.json(data[0]);
+      var results = JSON.parse(JSON.stringify(data))[0];
+      cache.set(req.url, results);
+      res.send(results);  
     }
   });
 }
@@ -127,7 +137,9 @@ const stockDayAvg = async function(req, res) {
       console.log(err);
       res.json({});
     } else {
-      res.json(data);
+      var results = JSON.parse(JSON.stringify(data));
+      cache.set(req.url, results);
+      res.send(results);  
     }
   });
 }
@@ -148,7 +160,9 @@ const marketDateRange = async function(req, res) {
       console.log(err);
       res.json({});
     } else {
-      res.json(data);
+      var results = JSON.parse(JSON.stringify(data));
+      cache.set(req.url, results);
+      res.send(results);  
     }
   });
 }
@@ -170,7 +184,9 @@ const stockAvgRange = async function(req, res) {
       console.log(err);
       res.json({});
     } else {
-      res.json(data);
+      var results = JSON.parse(JSON.stringify(data));
+      cache.set(req.url, results);
+      res.send(results);  
     }
   });
 }
@@ -194,7 +210,9 @@ const stockInfoPeriod = async function(req, res) {
       console.log(err);
       res.json({});
     } else {
-      res.json(data);
+      var results = JSON.parse(JSON.stringify(data));
+      cache.set(req.url, results);
+      res.send(results);  
     }
   });
 }
@@ -204,31 +222,36 @@ const volatility = async function(req, res){
   const dateStart = req.query.start ?? '2020-10-01'; //note: defaults to earliest date (10/01/2020)
   const dateEnd = req.query.end ?? '2022-07-29'; //note: defaults to latest date (07/29/2022)
 
-  connection.query(`
+  connection.query(
+    `
   WITH DayPrices AS (
     SELECT *, ((M.high + M.low)/2) AS day_price
     FROM Market M 
-    WHERE M.date >= '${dateStart}' AND M.end <= '${dateEnd}'
+    WHERE M.date >= '${dateStart}' AND M.date <= '${dateEnd}'
   ), Mean AS (
       SELECT *, AVG(D.day_price) AS mean 
       FROM DayPrices D 
       GROUP BY D.symbol
   ), Differences AS (
-      SELECT *, (D.day_price- M.mean) AS difference
+      SELECT D.*, (D.day_price- M.mean) AS difference
       FROM DayPrices D JOIN Mean M ON D.symbol = M.symbol
-      WHERE D.date >= '${dateStart}' AND D.end <= '${dateEnd}'
+      WHERE D.date >= '${dateStart}' AND D.date <= '${dateEnd}'
   )
-  SELECT D2.symbol, SUM(sqrt(D2.difference * D2.difference)) AS volatility 
+  SELECT D2.symbol, SUM(sqrt(D2.difference * D2.difference))/count(*) AS volatility 
   FROM Differences D2 
   GROUP BY D2.symbol;
-  `, (err, data) => {
-    if (err || data.length === 0) {
-      console.log(err);
-      res.json({});
-    } else {
-      res.json(data);
+  `,
+    (err, data) => {
+      if (err || data.length === 0) {
+        console.log(err);
+        res.json({});
+      } else {
+        var results = JSON.parse(JSON.stringify(data));
+        cache.set(req.url, results);
+        res.send(results);
+      }
     }
-  });
+  );
 }
 
 // Route #7: Get the upper/lower bollinger on a given period from a given time range of a given stock.
@@ -285,6 +308,7 @@ const bollinger = (req, res) => {
 
         return { ...item, buy, sell };
       });
+      cache.set(req.url, results);
       res.send(results);
     }
   });
@@ -320,7 +344,9 @@ const stockAllInfo = (req,res) => {
       console.log(err);
       res.json({});
     } else {
-      res.json(data);
+      var results = JSON.parse(JSON.stringify(data));
+      cache.set(req.url, results);
+      res.send(results);  
     }
   });
 }
@@ -379,7 +405,9 @@ const hotStocks = (req, res) => {
         console.log(err);
         res.json({});
       } else {
-        res.json(data);
+        var results = JSON.parse(JSON.stringify(data));
+        cache.set(req.url, results)
+        res.send(results)  
       }
     }
   );
@@ -391,13 +419,14 @@ const ranking = (req, res) => {
   const dateStart = req.query.start ?? '2020-10-01'; //note: defaults to earliest date (10/01/2020)
   const dateEnd = req.query.end ?? '2022-07-29'; //note: defaults to latest date (07/29/2022)
 
-  connection.query(`
+  connection.query(
+    `
   WITH price_changes AS (
     SELECT M1.symbol, (M1.close - M2.close) AS price_change 
     FROM Market M1 
          JOIN Market M2 
            ON M1.symbol = M2.symbol
-    WHERE M1.date = DATE_SUB(M2.date, INTERVAL 1 DAY) AND M2.date >= '${dateStart}' AND M1.date <= '${dateEnd}'
+    WHERE M1.date = '${dateEnd}' AND M2.date = '${dateStart}'
     ORDER BY price_change DESC
     LIMIT 100
   )
@@ -411,7 +440,9 @@ const ranking = (req, res) => {
         console.log(err);
         res.json({});
       } else {
-        res.json(data);
+        var results = JSON.parse(JSON.stringify(data));
+        cache.set(req.url, results);
+        res.send(results);
       }
     }
   );
@@ -466,6 +497,7 @@ const rollingMean = (req, res) => {
 
           return { ...item, buy, sell };
         });
+        cache.set(req.url, results);
         res.send(results);
       }
     }
@@ -527,6 +559,7 @@ const wieghtedRollingMean = (req, res) => {
 
           return { ...item, buy, sell };
         });
+        cache.set(req.url, results)
         res.send(results);
       }
     }
@@ -615,11 +648,17 @@ const expRollingMean = (req, res) => {
 
           return { start_date: item.date, rolling_mean: ema, buy, sell };
         });
+        cache.set(req.url, results);
         res.send(results);
       }
     }
   );
 };
+
+const middleware = (url) =>
+{
+  return cache.get(url)
+}
 
 
 
@@ -642,4 +681,5 @@ module.exports = {
   wieghtedRollingMean,
   expRollingMean,
   specificNews,
+  middleware
 };

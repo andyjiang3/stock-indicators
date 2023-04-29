@@ -9,6 +9,22 @@ app.use(cors({
   origin: '*',
 }));
 
+app.use((req, res, next) => {
+  const {url} = req
+  const cache = routes.middleware(url)
+  if (cache != null)
+  {
+    console.log("used cache")
+    res.send(cache)
+  }
+  else
+  {
+    console.log("not used")
+    next();
+  }
+  
+});
+
 // General SELECT * FROM Table Endpoints
 app.get('/stocks', routes.stocks);
 app.get('/news', routes.news);
