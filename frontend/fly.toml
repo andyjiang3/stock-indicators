@@ -12,6 +12,7 @@ primary_region = "atl"
 
 [env]
   PORT = "8080"
+  url_prefix = "https://stocks-prediction.fly.dev/"
 
 [http_service]
   internal_port = 8080
