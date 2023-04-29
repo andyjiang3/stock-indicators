@@ -29,7 +29,7 @@ const TradingStrategies = ({
                             <h1 className="text-3xl text-zinc-800">Mean Reversion</h1>
                             <Image src="/mean-reversion.png" alt="Mean Reversion Graph" width={500} height={500}></Image>
                             <div style={{textAlign: "left"}}>
-                                <p>Mean-reversion strategies work on the assumption that there is an underlying stable trend in the price of an asset and prices fluctuate randomly around this trend . Therefore, values deviating far from the trend will tend to reverse direction and revert back to the trend.<br></br><br></br><br></br></p>
+                                <p>Mean-reversion strategies work on the assumption that there is an underlying stable trend in the price of an asset and prices fluctuate randomly around this trend. Therefore, values deviating far from the trend will tend to reverse direction and revert back to the trend.<br></br><br></br><br></br></p>
                             </div>
                             <Link href="/strategies/mean-reversion">
                                 <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onClick={() => null}>Learn More</button>

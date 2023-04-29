@@ -158,7 +158,7 @@ const Stock = ({
         }
 
         const rollingMeanData = {
-            label: '20 ma',
+            label: `${period} ma`,
             fill: false,
             lineTension: 0.1,
             backgroundColor: 'rgba(255,171,0,0.4)',
