@@ -663,7 +663,7 @@ const Stock = ({
             case 3:
                 return <>
                     <h1 className="text-l font-medium mb-2">How it works</h1>
-                    <div className="mb-5">Mean-reversion strategies work on the assumption that there is an underlying stable trend in the price of an asset and prices fluctuate randomly around this trend . Therefore, values deviating far from the trend will tend to reverse direction and revert back to the trend.</div>
+                    <div className="mb-5">News anaylsis trading strategies work by measuring news data of a specific stock on a number of relevant attributes, such as information regarding new products or negative news, and then aggregating that data on a given period into a single score. Buy and sell signals are placed when this score is 'X' standard deviations of the mean news score on that period.</div>
                     <h1 className="text-l mt-5 font-medium mb-2">Options</h1>
                     <div className="mb-2">
                         <h1 className="inline-block text-l mt-5 font-small mb-2 mr-5">Period</h1>
