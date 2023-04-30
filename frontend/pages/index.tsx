@@ -74,7 +74,7 @@ const Home = ({
       <p className="mb-3">Explore new stocks!</p>
       <button className="mb-10 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" onClick={getRandomStock}>I'm Feeling Lucky</button>
       { randomStock ?
-        <div className="grid grid-cols-1 gap-4 h-46 mb-16">
+        <div className="grid grid-cols-1 gap-4 h-46 mb-20">
           <div className="relative hover:bg-blue-500 hover:text-white flex-row bg-white h-full w-full border border-gray-300 justify-center text-center p-1 pt-2 rounded-md">
             <Link href={`/stocks/${randomStock.symbol}`}>
               <div className="text-sm font-bold mb-3">{randomStock.symbol}</div>
@@ -89,7 +89,7 @@ const Home = ({
       }
       <h1 className="text-xl mt-5 font-medium">Hot Stocks 🔥</h1>
       <p className="mb-10">Stocks with the most postive upticks, determined using data analysis on news sentiment and market trends.</p>
-      {hotStocks ? <div className="grid grid-cols-5 gap-4 h-46 mb-16">
+      {hotStocks ? <div className="grid grid-cols-5 gap-4 h-46 mb-20">
         {(hotStocks as any).length > 0 ? (hotStocks as any).map((data: any, i: any) => {
           return (<div className="relative hover:bg-blue-500 hover:text-white flex-row bg-white h-full w-full border border-gray-300 justify-center text-center p-1 pt-2 rounded-md">
               <Link href={`/stocks/${data.symbol}`}>
@@ -113,7 +113,7 @@ const Home = ({
      
       <h1 className="text-xl mt-5 font-medium">Top Movers 📈</h1>
       <p className="mb-10">Stocks that had the biggest upward price movement from {startDate} to {endDate}.</p>
-      {topMovers ? <div className="grid grid-cols-5 gap-4 h-46 mb-16">
+      {topMovers ? <div className="grid grid-cols-5 gap-4 h-46 mb-20">
         {(topMovers as any).length > 0 ? (topMovers as any).map((data: any, i: any) => {
           if (i < 10) {
             return (<div className="relative hover:bg-blue-500 hover:text-white flex-row bg-white h-full w-full border border-gray-300 justify-center text-center p-1 pt-2 rounded-md">
@@ -138,7 +138,7 @@ const Home = ({
 
     <h1 className="text-xl mt-5 font-medium">Most Volatile 💥</h1>
       <p className="mb-10">Stocks with the biggest price fluctuations from {startDate} to {endDate}.</p>
-      {mostVolatile ? <div className="grid grid-cols-5 gap-4 h-46 mb-15">
+      {mostVolatile ? <div className="grid grid-cols-5 gap-4 h-46 mb-20">
 
         {(mostVolatile as any).length > 0 ? (mostVolatile as any).map((data: any, i: any) => {
           if (i < 10) {

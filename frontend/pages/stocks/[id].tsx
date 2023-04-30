@@ -739,7 +739,7 @@ const Stock = ({
                         }
                      </div>
                 </div>
-                <h1 className="text-xl mt-5 mb-3 font-small">News Data</h1>
+                <h1 className="text-xl mt-10 mb-3 font-small">News Data</h1>
                 <p className="text-zinc-600 mb-3">News data for {stock} starting from {startDate} to {endDate} represented in volume</p>
                 <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-10" onClick={() => setNewsShowMore(!newsShowMore)}>Show {newsShowMore ?  "less" : "all"} data</button>
    
