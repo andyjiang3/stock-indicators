@@ -627,7 +627,7 @@ const Stock = ({
                         <h1 className="inline-block text-l mt-5 font-small mb-2 mr-5">Multiplier Percentage</h1>
                         <input className="inline-block p-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Period Number" onChange={(event: React.ChangeEvent<HTMLInputElement>) => setMeanMultipler(parseFloat(event.target.value) / 1000)} defaultValue={meanMultipler}></input>
                     </div>
-                    <p className="text-zinc-600 mb-10"> Buy (sell) indicators are based on being above (below) the upper (lower) bollinger. <u> This specifies how far above or below the bollinger the price should be before indiciating buy or sell. Higher percentage means more relaxed indicator constraints for buy or sell signals.</u></p>
+                    <p className="text-zinc-600 mb-10"> Buy (sell) indicators are based on being below (above) the lower (upper) bollinger. <u> This specifies how far above or below the bollinger the price should be before indiciating buy or sell. Higher percentage means more relaxed indicator constraints for buy or sell signals.</u></p>
                 </>
             case 2:
                 return <>
