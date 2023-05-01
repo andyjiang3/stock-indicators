@@ -264,7 +264,7 @@ const Stock = ({
             pointHoverBorderWidth: 2,
             pointRadius: 5,
             pointHitRadius: 10,
-            data: (lowerBollinger as any).filter((d: any) => d.sell).map((d : any) => {
+            data: (upperBollinger as any).filter((d: any) => d.sell).map((d : any) => {
                 if (d.sell) {
                     return {x: (new Date(d.date)).toISOString().slice(0, 10), y: d.close}
                 }
@@ -288,7 +288,7 @@ const Stock = ({
             pointHoverBorderWidth: 2,
             pointRadius: 5,
             pointHitRadius: 10,
-            data: (upperBollinger as any).filter((d: any) => d.buy).map((d : any) => {
+            data: (lowerBollinger as any).filter((d: any) => d.buy).map((d : any) => {
                 if (d.buy) {
                     return {x: (new Date(d.date)).toISOString().slice(0, 10), y: d.close}
                 }
