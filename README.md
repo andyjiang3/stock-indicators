@@ -1,4 +1,4 @@
-# Stock Prediction
+# SQL-based indicators for S&P 500 stocks
 
 To run:
 
